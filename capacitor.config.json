@@ -3,12 +3,12 @@
   "appName": "기사의 노트",
   "webDir": "www",
   "android": {
-    "backgroundColor": "#1A1D21"
+    "backgroundColor": "#F2F2F7"
   },
   "plugins": {
     "SystemBars": {
       "insetsHandling": "native",
-      "style": "DARK"
+      "style": "LIGHT"
     }
   }
 }
