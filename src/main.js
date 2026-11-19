@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -360,15 +360,28 @@ VIEWS.cal = p => {
   for (let d = 1; d <= days; d++) {
     const ds = Y + '-' + p2(M) + '-' + p2(d); const list = D.schedules.filter(s => s.date === ds);
     const cls = ['d', (first.getDay() + d - 1) % 7 === 0 ? 'sun' : '', ds === todayStr() ? 'today' : '', ds === sel ? 'sel' : ''].join(' ');
-    cells += '<button class="' + cls + '" data-act="selDay" data-v="' + ds + '" aria-label="' + M + '월 ' + d + '일' + (list.length ? ', 일정 ' + list.length + '개' : '') + '"><span class="n">' + d + '</span><span class="dots">' + list.slice(0, 3).map(s => '<i style="background:' + stColor(s.status) + '"></i>').join('') + '</span></button>';
+    const other = D.notes.some(n => n.createdAt && ymd(new Date(n.createdAt)) === ds) || D.txs.some(t => t.date === ds);
+    cells += '<button class="' + cls + '" data-act="selDay" data-v="' + ds + '" aria-label="' + M + '월 ' + d + '일' + (list.length ? ', 일정 ' + list.length + '개' : '') + '"><span class="n">' + d + '</span><span class="dots">' + list.slice(0, 3).map(s => '<i style="background:' + stColor(s.status) + '"></i>').join('') + (other ? '<i style="background:#8E8E93"></i>' : '') + '</span></button>';
   }
   const list = D.schedules.filter(s => s.date === sel).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
   return '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="newSched" aria-label="일정 추가">' + I.plus + '</button></div></div>' +
     '<div class="titlerow"><div class="title" style="padding:0"><h1>' + M + '월 <span style="font-size:20px;font-weight:600;color:var(--muted)">' + Y + '</span></h1></div><span style="display:flex"><button class="navbtn" data-act="calMove" data-v="-1" aria-label="이전 달">' + I.back + '</button><button class="navbtn" data-act="calMove" data-v="1" aria-label="다음 달">' + I.next + '</button></span></div>' +
     '<div class="cal"><div class="wk">' + WD.map(w => '<span>' + w + '</span>').join('') + '</div><div class="grid">' + cells + '</div></div>' +
-    '<div class="legend"><span><span class="dot" style="background:var(--orange)"></span>예정·진행</span><span><span class="dot" style="background:#B45309"></span>자재 대기</span><span><span class="dot" style="background:var(--green-dot)"></span>완료</span></div>' +
-    sec(dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '')) + '<div class="group">' + (list.length ? list.map(s => schedRow(s, teamOn())).join('') : '<button class="row" data-act="newSched"><span class="main"><span class="s">일정이 없어요. 눌러서 추가하세요.</span></span>' + I.chev + '</button>') + '</div>';
+    '<div class="legend"><span><span class="dot" style="background:var(--orange)"></span>예정·진행</span><span><span class="dot" style="background:#B45309"></span>자재 대기</span><span><span class="dot" style="background:var(--green-dot)"></span>완료</span><span><span class="dot" style="background:#8E8E93"></span>기록·거래</span></div>' +
+    '<div id="day">' + dayBlock(sel, list, teamOn()) + '</div>';
 };
+
+function dayBlock(sel, scheds, showWho) {
+  const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
+  const txs = D.txs.filter(t => t.date === sel).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const sale = txs.filter(t => t.type === 'sale').reduce((a, t) => a + t.total, 0), buy = txs.filter(t => t.type === 'buy').reduce((a, t) => a + t.total, 0);
+  const sum = [scheds.length ? '일정 ' + scheds.length : '', notes.length ? '기록 ' + notes.length : '', sale ? '매출 ' + won(sale) + '원' : '', buy ? '매입 ' + won(buy) + '원' : ''].filter(Boolean).join(' · ');
+  return '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:22px 0 0;padding:0 20px 0 32px"><div><p style="margin:0;font-size:17px;font-weight:800">' + dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '') + '</p><p style="margin:2px 0 0;font-size:13px;color:var(--muted)">' + (sum || '이날은 아직 아무것도 없어요') + '</p></div></div>' +
+    '<div class="chips" style="margin-top:10px"><button class="chip" data-act="newSched">+ 일정</button><button class="chip" data-act="newNote" data-v="' + sel + '">+ 고장 기록</button><button class="chip" data-act="newTx" data-v="' + sel + '">+ 거래</button></div>' +
+    sec('일정 ' + scheds.length) + '<div class="group">' + (scheds.length ? scheds.map(s => schedRow(s, showWho)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>' +
+    (notes.length ? sec('고장 기록 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, teamOn())).join('') + '</div>' : '') +
+    (txs.length ? sec('거래 ' + txs.length + (sale ? ' · 매출 +' + won(sale) : '') + (buy ? ' · 매입 −' + won(buy) : '')) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
+}
 
 /* --- 일정 편집 --- */
 VIEWS.schedEdit = p => {
@@ -495,9 +508,16 @@ VIEWS.tcal = p => {
     '<div class="titlerow"><div class="title" style="padding:0"><h1>팀 일정</h1></div><span style="display:flex"><button class="navbtn" data-act="tWeek" data-v="-7" aria-label="지난주">' + I.back + '</button><button class="navbtn" data-act="tWeek" data-v="7" aria-label="다음 주">' + I.next + '</button></span></div>' +
     '<div class="strip">' + strip + '</div>' + sec(dayLabel(sel)) +
     un.map(s => '<div class="reqcard" style="background:var(--tint-bg);display:flex;align-items:center;gap:12px;margin-top:8px"><button class="main" data-act="openSched" data-id="' + esc(s.id) + '" style="flex:1;text-align:left;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--tint-dark)">배정 안 됨 · ' + esc(s.start || '') + '</span><span style="font-size:15px;font-weight:600">' + esc(s.title) + (s.client ? ' · ' + esc(s.client) : '') + '</span></button><button class="chip on" data-act="assign" data-id="' + esc(s.id) + '">기사 배정</button></div>').join('') +
-    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:13px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('');
+    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:13px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('') +
+    dayExtra(sel);
 };
 VIEWS.tledger = p => ledgerView(p, true);
+function dayExtra(sel) {
+  const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
+  const txs = D.txs.filter(t => t.date === sel);
+  return (notes.length ? sec('이날 고장 기록 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, true)).join('') + '</div>' : '') +
+    (txs.length ? sec('이날 거래 ' + txs.length) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
+}
 
 /* --- 소통 --- */
 VIEWS.talk = p => {
@@ -566,7 +586,7 @@ ACT.toggleOpen = () => { V.p.onlyOpen = !V.p.onlyOpen; render(); };
 ACT.viewPhoto = el => showPhoto(el.dataset.id);
 
 /* notes */
-ACT.newNote = () => go('noteEdit', { d: { equip: '', site: '', symptom: '', cause: '', action: '', memo: '', resolved: false, photos: [], who: 'me', _new: [] } });
+ACT.newNote = el => { const dt = el && el.dataset && el.dataset.v; const c = dt && dt !== todayStr() ? parseYmd(dt).getTime() + 12 * 3600000 : null; go('noteEdit', { d: { equip: '', site: '', symptom: '', cause: '', action: '', memo: '', resolved: false, photos: [], who: 'me', _new: [], createdAt: c || undefined } }); };
 ACT.openNote = el => go('note', { id: el.dataset.id });
 ACT.editNote = el => { const n = D.notes.find(x => x.id === el.dataset.id); go('noteEdit', { d: Object.assign(JSON.parse(JSON.stringify(n)), { _new: [], _orig: [...(n.photos || [])] }) }); };
 ACT.draftResolved = el => { V.p.d.resolved = el.dataset.v === '1'; dirty = true; render(); };
@@ -578,7 +598,7 @@ ACT.saveNote = async () => {
   ['equip', 'site', 'symptom', 'cause', 'action', 'memo'].forEach(k => n[k] = (d[k] || '').trim()); n.resolved = !!d.resolved; n.photos = [...d.photos];
   await putItem('notes', n);
   await delPhotos([...(d._orig || []), ...(d._new || [])].filter(p => !n.photos.includes(p)));
-  d._new = []; dirty = false; toast('저장했어요'); V.stack.pop(); go('note', { id: n.id }, { replace: true });
+  const wasEdit = !!d.id; d._new = []; dirty = false; toast('저장했어요'); if (wasEdit) V.stack.pop(); go('note', { id: n.id }, { replace: true });
 };
 ACT.delNote = async el => { if (!(await ask('이 기록을 삭제할까요? 사진도 함께 지워져요.', '삭제', true))) return; const n = D.notes.find(x => x.id === el.dataset.id); await delItem('notes', n.id); await delPhotos(n.photos); toast('삭제했어요'); back(); };
 ACT.addPhoto = async () => {
@@ -623,7 +643,7 @@ ACT.assign = async el => { const ms = members(); const i = await sheet(ms.map(m 
 
 /* ledger */
 function txDraft(t, type) { if (t) { const c = JSON.parse(JSON.stringify(t)); c.amount = c.vatIncl ? c.total : c.supply; c.photos = c.photos || []; c._orig = [...c.photos]; c._new = []; return c; } return { type: type || 'sale', amount: 0, vatIncl: true, date: todayStr(), party: '', memo: '', proof: '카드', who: 'me', photos: [], _new: [] }; }
-ACT.newTx = () => go('txEdit', { d: txDraft(null) });
+ACT.newTx = el => { const d = txDraft(null); const dt = el && el.dataset && el.dataset.v; if (dt && /^\d{4}-/.test(dt)) d.date = dt; go('txEdit', { d }); };
 ACT.openTx = el => go('txEdit', { d: txDraft(D.txs.find(t => t.id === el.dataset.id)) });
 ACT.ledMove = el => { const [Y, M] = (V.p.ym || todayStr().slice(0, 7)).split('-').map(Number); V.p.ym = ymd(new Date(Y, M - 1 + Number(el.dataset.v), 1)).slice(0, 7); render(); };
 ACT.txType = el => { V.p.d.type = el.dataset.v; dirty = true; render(); };
