@@ -1,0 +1,23 @@
+{
+  "name": "gisa-note",
+  "version": "1.0.0",
+  "private": true,
+  "description": "기사의 노트 - 현장 기사용 고장 기록 앱",
+  "scripts": {
+    "build": "node build.mjs",
+    "sync": "npm run build && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/camera": "^8.2.6",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "esbuild": "^0.28.2"
+  }
+}
