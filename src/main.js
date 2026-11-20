@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
