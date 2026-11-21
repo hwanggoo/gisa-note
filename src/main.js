@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.1.2';
+const VERSION = '1.2.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -45,6 +45,7 @@ const I = {
   send: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
 };
 const TABI = {
+  home: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8.5 3v4M15.5 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/>',
   rec: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8.5 3v4M15.5 3v4"/>',
   man: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M9 8h7M9 12h5"/>',
@@ -214,7 +215,7 @@ function similar(note) {
 }
 
 /* ============ router ============ */
-const ROOTS = { home: 'rec', cal: 'cal', man: 'man', ledger: 'led', thome: 'rec', tcal: 'cal', tledger: 'led', talk: 'talk' };
+const ROOTS = { home: 'home', records: 'rec', man: 'man', ledger: 'led', tledger: 'led', talk: 'talk' };
 let V = { name: 'home', p: {}, stack: [] };
 let dirty = false;
 function go(name, p = {}, opts = {}) {
@@ -226,7 +227,7 @@ async function back() {
   dirty = false;
   if (V.p && V.p.d && V.p.d._new && V.p.d._new.length) { delPhotos(V.p.d._new); V.p.d._new = []; }
   if (V.stack.length) { const s = V.stack.pop(); V.name = s.name; V.p = s.p; render(); }
-  else go(teamOn() ? 'thome' : 'home', {}, { root: true });
+  else go('home', {}, { root: true });
 }
 function render() {
   const fn = VIEWS[V.name] || VIEWS.home;
@@ -235,11 +236,24 @@ function render() {
   renderTabbar();
   const after = AFTER[V.name]; if (after) after(V.p);
 }
+function ctaFor() {
+  switch (V.name) {
+    case 'home': { const sel = V.p.sel || todayStr(); return [(sel === todayStr() ? '오늘' : shortDay(sel)) + ' 일정·기록·거래 추가', 'addOnDay']; }
+    case 'records': return ['새 고장 기록', 'newNote'];
+    case 'man': return ['매뉴얼 올리기', 'addManual'];
+    case 'ledger': case 'tledger': return ['거래 추가', 'newTx'];
+    case 'talk': return V.p.tab === 'req' ? ['구매 요청', 'newReq'] : null;
+  }
+  return null;
+}
 function renderTabbar() {
   const bar = $('#tabbar'); const cur = ROOTS[V.name];
+  const cta = ctaFor(); let c = $('#cta');
+  if (!c) { c = document.createElement('button'); c.id = 'cta'; c.className = 'cta'; document.body.appendChild(c); }
+  if (cta && cur) { c.style.display = 'flex'; c.dataset.act = cta[1]; c.dataset.v = cta[2] || ''; c.innerHTML = I.plus + '<span>' + esc(cta[0]) + '</span>'; } else c.style.display = 'none';
   if (!cur) { bar.style.display = 'none'; document.body.style.paddingBottom = '40px'; return; }
-  bar.style.display = 'grid'; document.body.style.paddingBottom = V.name === 'talk' ? '150px' : '110px';
-  const tabs = teamOn() ? [['thome', '기록', 'rec'], ['tcal', '일정', 'cal'], ['man', '매뉴얼', 'man'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '기록', 'rec'], ['cal', '일정', 'cal'], ['man', '매뉴얼', 'man'], ['ledger', '장부', 'led']];
+  bar.style.display = 'grid'; document.body.style.paddingBottom = (V.name === 'talk' && V.p.tab !== 'req') ? '150px' : '170px';
+  const tabs = teamOn() ? [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['ledger', '장부', 'led']];
   bar.style.gridTemplateColumns = 'repeat(' + tabs.length + ',minmax(0,1fr))';
   bar.innerHTML = tabs.map(([v, l, ic]) => '<button data-act="tab" data-v="' + v + '" class="' + (ic === cur ? 'on' : '') + '"' + (ic === cur ? ' aria-current="page"' : '') + ' style="position:relative"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (ic === cur ? 2.1 : 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TABI[ic] + '</svg>' + (v === 'talk' && newReqCount() ? '<b class="bd">' + newReqCount() + '</b>' : '') + '<span>' + l + '</span></button>').join('');
 }
@@ -288,38 +302,34 @@ function durText(s) { if (!s.start || !s.end) return ''; const [a, b] = s.start.
 /* ============ VIEWS ============ */
 const VIEWS = {}, AFTER = {};
 
-/* --- 기록 홈 (개인) --- */
-VIEWS.home = p => {
-  const ym = todayStr().slice(0, 7);
-  const open = D.notes.filter(n => !n.resolved).length, todayS = D.schedules.filter(s => s.date === todayStr()).length, ms = monthStats(ym);
+/* --- 기록 목록 --- */
+VIEWS.records = p => {
   let list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const q = (p.q || '').trim().toLowerCase();
   if (p.onlyOpen) list = list.filter(n => !n.resolved);
   if (q) { const qt = q.split(/\s+/); list = list.filter(n => { const h = [n.equip, n.symptom, n.cause, n.action, n.site, n.memo].join(' ').toLowerCase(); return qt.every(t => h.includes(t)); }); }
-  return '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button><button class="navbtn" data-act="newNote" aria-label="새 기록">' + I.pen + '</button></div></div>' +
-    '<div class="title"><h1>기사의 노트</h1><p class="sub">' + dayLabel(todayStr()) + '</p></div>' +
-    '<div class="tiles">' +
-    tile('toggleOpen', '#EA580C', '<path d="M12 7v6M12 17h.01"/>', open, '미해결' + (p.onlyOpen ? ' ✓' : '')) +
-    tile('tab" data-v="cal', '#2563EB', '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', todayS, '오늘 일정') +
-    tile('tab" data-v="ledger', '#15803D', '<path d="M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.3 1.3-4.3 3.2 0 4.6 9 2.6 9 7.1 0 2-1.9 3.4-4.7 3.4-2.2 0-4-.9-4.9-2.3"/>', man(ms.sale) + '<small>만</small>', (new Date().getMonth() + 1) + '월 매출') +
-    '</div>' +
+  const open = D.notes.filter(n => !n.resolved).length;
+  return topBar() +
+    '<div class="title"><h1>고장 기록</h1><p class="sub">전체 ' + D.notes.length + '건 · 미해결 ' + open + '건</p></div>' +
     '<div class="search"><label>' + I.search + '<span class="sr">기록 검색</span><input id="q" type="search" placeholder="장비, 모델명, 증상 검색" value="' + esc(p.q || '') + '" autocomplete="off"></label></div>' +
-    '<div id="list">' + homeList(list, q, false) + '</div>';
+    '<div class="chips" style="margin-top:10px"><button class="chip' + (!p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="0">전체</button><button class="chip' + (p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="1">미해결만</button></div>' +
+    '<div id="list">' + homeList(list, q, teamOn()) + '</div>';
 };
 function tile(act, color, icon, num, label) {
   return '<button class="tile" data-act="' + act + '"><span class="top"><span class="ic" style="background:' + color + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span><span class="num">' + num + '</span></span><span class="lb">' + label + '</span></button>';
 }
 function homeList(list, q, withAv) {
-  if (!D.notes.length) return '<div class="empty"><h2>첫 기록을 남겨보세요</h2>오른쪽 위 연필 버튼을 눌러<br>장비, 증상, 원인, 조치를 적으면<br>다음에 같은 고장을 바로 찾을 수 있어요.</div>';
+  if (!D.notes.length) return '<div class="empty"><h2>첫 기록을 남겨보세요</h2>아래 주황색 버튼을 눌러<br>장비, 증상, 원인, 조치를 적으면<br>다음에 같은 고장을 바로 찾을 수 있어요.</div>';
   if (!list.length) return '<div class="empty">' + (q ? '"' + esc(q) + '"에 맞는 기록이 없어요' : '해당하는 기록이 없어요') + '</div>';
   if (q) return sec(list.length + '건 찾음') + '<div class="group">' + list.map(n => noteRow(n, withAv)).join('') + '</div>';
   const g = groupByDate(list);
   return Object.entries(g).filter(([, a]) => a.length).map(([k, a]) => sec(k) + '<div class="group">' + a.map(n => noteRow(n, withAv)).join('') + '</div>').join('');
 }
-AFTER.home = p => {
+AFTER.records = p => {
   const q = $('#q'); if (!q) return;
-  q.addEventListener('input', () => { V.p.q = q.value; const n = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).filter(x => !V.p.onlyOpen || !x.resolved); const qq = q.value.trim().toLowerCase(); const list = qq ? n.filter(x => { const h = [x.equip, x.symptom, x.cause, x.action, x.site, x.memo].join(' ').toLowerCase(); return qq.split(/\s+/).every(t => h.includes(t)); }) : n; $('#list').innerHTML = homeList(list, qq, false); });
+  q.addEventListener('input', () => { V.p.q = q.value; const n = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).filter(x => !V.p.onlyOpen || !x.resolved); const qq = q.value.trim().toLowerCase(); const list = qq ? n.filter(x => { const h = [x.equip, x.symptom, x.cause, x.action, x.site, x.memo].join(' ').toLowerCase(); return qq.split(/\s+/).every(t => h.includes(t)); }) : n; $('#list').innerHTML = homeList(list, qq, teamOn()); });
 };
+const topBar = () => teamOn() ? '<div class="chipbar">' + spaceChip() + '<button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div>' : '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div></div>';
 
 /* --- 기록 상세 --- */
 VIEWS.note = p => {
@@ -352,8 +362,8 @@ VIEWS.noteEdit = p => {
 };
 function photosHtml(list) { return (list || []).map((pid, i) => '<div class="ph"><img alt="사진" data-pid="' + esc(pid) + '"><button class="x" data-act="rmPhoto" data-i="' + i + '" aria-label="사진 빼기">×</button></div>').join('') + '<button class="addph" data-act="addPhoto">' + I.cam + '사진 추가</button>'; }
 
-/* --- 일정 달력 (개인) --- */
-VIEWS.cal = p => {
+/* --- 홈: 한눈에 + 달력 --- */
+VIEWS.home = p => {
   const sel = p.sel || todayStr(); const ym = p.ym || sel.slice(0, 7);
   const [Y, M] = ym.split('-').map(Number); const first = new Date(Y, M - 1, 1); const days = new Date(Y, M, 0).getDate();
   let cells = ''; for (let i = 0; i < first.getDay(); i++) cells += '<span></span>';
@@ -364,21 +374,31 @@ VIEWS.cal = p => {
     cells += '<button class="' + cls + '" data-act="selDay" data-v="' + ds + '" aria-label="' + M + '월 ' + d + '일' + (list.length ? ', 일정 ' + list.length + '개' : '') + '"><span class="n">' + d + '</span><span class="dots">' + list.slice(0, 3).map(s => '<i style="background:' + stColor(s.status) + '"></i>').join('') + (other ? '<i style="background:#8E8E93"></i>' : '') + '</span></button>';
   }
   const list = D.schedules.filter(s => s.date === sel).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
-  return '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="newSched" aria-label="일정 추가">' + I.plus + '</button></div></div>' +
-    '<div class="titlerow"><div class="title" style="padding:0"><h1>' + M + '월 <span style="font-size:20px;font-weight:600;color:var(--muted)">' + Y + '</span></h1></div><span style="display:flex"><button class="navbtn" data-act="calMove" data-v="-1" aria-label="이전 달">' + I.back + '</button><button class="navbtn" data-act="calMove" data-v="1" aria-label="다음 달">' + I.next + '</button></span></div>' +
-    '<div class="cal"><div class="wk">' + WD.map(w => '<span>' + w + '</span>').join('') + '</div><div class="grid">' + cells + '</div></div>' +
+  const ms = monthStats(todayStr().slice(0, 7));
+  return topBar() +
+    '<div class="title"><h1>' + (teamOn() ? esc(D.team.name) : '기사의 노트') + '</h1><p class="sub">' + dayLabel(todayStr()) + (teamOn() ? ' · 팀원 ' + D.team.members.length + '명' : '') + '</p></div>' +
+    '<div class="tiles">' +
+    tile('selDay" data-v="' + todayStr(), '#2563EB', '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', D.schedules.filter(s => s.date === todayStr()).length, teamOn() ? '오늘 출동' : '오늘 일정') +
+    tile('openOnly', '#EA580C', '<path d="M12 7v6M12 17h.01"/>', D.notes.filter(n => !n.resolved).length, '미해결') +
+    tile('tab" data-v="' + (teamOn() ? 'tledger' : 'ledger'), '#15803D', '<path d="M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.3 1.3-4.3 3.2 0 4.6 9 2.6 9 7.1 0 2-1.9 3.4-4.7 3.4-2.2 0-4-.9-4.9-2.3"/>', man(ms.sale) + '<small>만</small>', (new Date().getMonth() + 1) + '월 매출') +
+    '</div>' +
+    '<div class="titlerow" style="margin-top:18px"><b style="font-size:22px;letter-spacing:-.3px">' + Y + '년 ' + M + '월</b><span style="display:flex"><button class="navbtn" data-act="calMove" data-v="-1" aria-label="이전 달">' + I.back + '</button><button class="navbtn" data-act="calMove" data-v="1" aria-label="다음 달">' + I.next + '</button></span></div>' +
+    '<div class="cal" style="margin-top:4px"><div class="wk">' + WD.map(w => '<span>' + w + '</span>').join('') + '</div><div class="grid">' + cells + '</div></div>' +
     '<div class="legend"><span><span class="dot" style="background:var(--orange)"></span>예정·진행</span><span><span class="dot" style="background:#B45309"></span>자재 대기</span><span><span class="dot" style="background:var(--green-dot)"></span>완료</span><span><span class="dot" style="background:#8E8E93"></span>기록·거래</span></div>' +
     '<div id="day">' + dayBlock(sel, list, teamOn()) + '</div>';
 };
-
+function teamDay(day) {
+  const un = day.filter(s => !s.who);
+  return un.map(s => '<div class="reqcard" style="background:var(--tint-bg);display:flex;align-items:center;gap:12px;margin-top:10px"><button class="main" data-act="openSched" data-id="' + esc(s.id) + '" style="flex:1;text-align:left;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--tint-dark)">배정 안 됨 · ' + esc(s.start || '') + '</span><span style="font-size:15px;font-weight:600">' + esc(s.title) + (s.client ? ' · ' + esc(s.client) : '') + '</span></button><button class="chip on" data-act="assign" data-id="' + esc(s.id) + '">기사 배정</button></div>').join('') +
+    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:13px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('');
+}
 function dayBlock(sel, scheds, showWho) {
   const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
   const txs = D.txs.filter(t => t.date === sel).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const sale = txs.filter(t => t.type === 'sale').reduce((a, t) => a + t.total, 0), buy = txs.filter(t => t.type === 'buy').reduce((a, t) => a + t.total, 0);
   const sum = [scheds.length ? '일정 ' + scheds.length : '', notes.length ? '기록 ' + notes.length : '', sale ? '매출 ' + won(sale) + '원' : '', buy ? '매입 ' + won(buy) + '원' : ''].filter(Boolean).join(' · ');
   return '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:22px 0 0;padding:0 20px 0 32px"><div><p style="margin:0;font-size:17px;font-weight:800">' + dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '') + '</p><p style="margin:2px 0 0;font-size:13px;color:var(--muted)">' + (sum || '이날은 아직 아무것도 없어요') + '</p></div></div>' +
-    '<div class="chips" style="margin-top:10px"><button class="chip" data-act="newSched">+ 일정</button><button class="chip" data-act="newNote" data-v="' + sel + '">+ 고장 기록</button><button class="chip" data-act="newTx" data-v="' + sel + '">+ 거래</button></div>' +
-    sec('일정 ' + scheds.length) + '<div class="group">' + (scheds.length ? scheds.map(s => schedRow(s, showWho)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>' +
+    (teamOn() ? teamDay(scheds) : sec('일정 ' + scheds.length) + '<div class="group">' + (scheds.length ? scheds.map(s => schedRow(s, false)).join('') : '<button class="row" data-act="addOnDay"><span class="main"><span class="s">일정이 없어요. 아래 주황 버튼으로 추가하세요.</span></span></button>') + '</div>') +
     (notes.length ? sec('고장 기록 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, teamOn())).join('') + '</div>' : '') +
     (txs.length ? sec('거래 ' + txs.length + (sale ? ' · 매출 +' + won(sale) : '') + (buy ? ' · 매입 −' + won(buy) : '')) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
 }
@@ -407,8 +427,8 @@ function ledgerView(p, team) {
   if (v.simple) vat = '<div class="vatline"><span>매출 ' + man(v.saleTotal) + '만 × 업종 ' + Math.round(D.settings.rate * 100) + '% × 10%</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입 공제 (증빙 매입 ' + man(v.buyTotal) + '만 × 0.5%)</span><span>−' + won(v.ded) + '</span></div>' + (v.exempt ? '<div class="vatline"><span style="color:var(--green)">올해 매출 4,800만 원 미만이면 납부 면제 (신고는 해야 해요)</span></div>' : '');
   else vat = '<div class="vatline"><span>매출세액 (매출 ' + man(v.saleTotal) + '만 중 부가세)</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입세액 (증빙 매입 ' + man(v.buyTotal) + '만 중)</span><span>−' + won(v.ded) + '</span></div>';
   const dueD = parseYmd(per.due);
-  const head = team ? '<div class="chipbar">' + spaceChip() + '<button class="navbtn" data-act="newTx" aria-label="거래 추가">' + I.plus + '</button></div><div class="titlerow"><div class="title" style="padding:0"><h1>팀 장부</h1></div><span class="lock">' + I.lock + '사장님만 보기</span></div>'
-    : '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="newTx" aria-label="거래 추가">' + I.plus + '</button></div></div><div class="titlerow"><div class="title" style="padding:0"><h1>장부</h1></div>' + monthNav(M) + '</div>';
+  const head = team ? topBar() + '<div class="titlerow"><div class="title" style="padding:0"><h1>팀 장부</h1></div><span class="lock">' + I.lock + '사장님만 보기</span></div>'
+    : topBar() + '<div class="titlerow"><div class="title" style="padding:0"><h1>장부</h1></div>' + monthNav(M) + '</div>';
   const memberBlock = team ? memberStats(ym) : '';
   return head + (team ? '<div style="display:flex;justify-content:flex-end;padding:8px 12px 0">' + monthNav(M) + '</div>' : '') +
     '<div class="card"><p style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--muted)">' + Y + '년 ' + M + '월 · 거래 ' + ms.list.length + '건</p><div class="stats"><div><span>매출</span><b style="color:var(--blue)">' + man(ms.sale) + '만</b></div><div><span>매입</span><b>' + man(ms.buy) + '만</b></div><div><span>남은 돈</span><b style="color:var(--green)">' + man(ms.net) + '만</b></div></div></div>' +
@@ -452,9 +472,8 @@ const splitText = s => s.total ? '공급가액 ' + won(s.supply) + '원 · 부�
 /* --- 매뉴얼 --- */
 VIEWS.man = () => {
   const list = D.manuals.slice().sort((a, b) => b.created - a.created);
-  return (teamOn() ? '<div class="chipbar">' + spaceChip() + '<span></span></div>' : '<div class="nav"></div>') +
+  return topBar() +
     '<div class="title"><h1>매뉴얼</h1><p class="sub">영어·일본어 매뉴얼을 한곳에 보관해요</p></div>' +
-    '<div class="bigbtns"><button class="p" data-act="addPdf">' + I.pdf + 'PDF 올리기</button><button data-act="addManPhotos">' + I.cam + '종이 매뉴얼 찍기</button></div>' +
     '<div class="note">한국어 설치 순서로 정리해주는 AI 기능은 서버를 붙인 다음 버전에서 열려요. 지금은 매뉴얼을 모아두고 바로 꺼내볼 수 있어요.</div>' +
     sec('내 매뉴얼' + (list.length ? ' ' + list.length : '')) + '<div class="group">' + (list.length ? list.map(m => '<button class="row" data-act="openMan" data-id="' + esc(m.id) + '"><span class="doc">' + esc(m.lang || 'EN') + '</span><span class="main"><span class="t" style="font-size:15px">' + esc(m.name) + '</span><span class="s" style="font-size:13px">' + (m.kind === 'pdf' ? 'PDF · ' + (m.size / 1048576).toFixed(1) + 'MB' : '사진 ' + m.files.length + '장') + ' · ' + esc(relTime(m.created)) + '</span></span>' + I.chev + '</button>').join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">아직 올린 매뉴얼이 없어요.</span></div>') + '</div>';
 };
@@ -485,32 +504,6 @@ VIEWS.settings = () => {
     sec('정보') + '<div class="group"><a class="row" href="' + PRIVACY_URL + '" target="_blank" rel="noopener"><span class="ico30" style="background:#636366">' + sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">개인정보처리방침</span></span>' + I.chev + '</a><div class="row"><span class="ico30" style="background:#C2410C">' + sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">버전</span></span><span class="val">' + VERSION + '</span></div></div>';
 };
 
-/* --- 팀 홈 --- */
-VIEWS.thome = () => {
-  const ym = todayStr().slice(0, 7); const ms = monthStats(ym);
-  const list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
-  return '<div class="chipbar">' + spaceChip() + '<span style="display:flex"><button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button><button class="navbtn" data-act="newNote" aria-label="새 기록">' + I.pen + '</button></span></div>' +
-    '<div class="title"><h1>' + esc(D.team.name) + '</h1><p class="sub">' + dayLabel(todayStr()) + ' · 팀원 ' + D.team.members.length + '명</p></div>' +
-    '<div class="tiles">' + tile('tab" data-v="tcal', '#2563EB', '<path d="M5 17h2l2-5 3 8 3-11 2 8h2"/>', D.schedules.filter(s => s.date === todayStr()).length, '오늘 출동') +
-    tile('tab" data-v="thome', '#EA580C', '<path d="M12 7v6M12 17h.01"/>', D.notes.filter(n => !n.resolved).length, '미해결') +
-    tile('tab" data-v="tledger', '#15803D', '<path d="M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.3 1.3-4.3 3.2 0 4.6 9 2.6 9 7.1 0 2-1.9 3.4-4.7 3.4-2.2 0-4-.9-4.9-2.3"/>', man(ms.sale) + '<small>만</small>', (new Date().getMonth() + 1) + '월 팀 매출') + '</div>' +
-    sec('팀 최근 기록') + (list.length ? '<div class="group">' + list.map(n => noteRow(n, true)).join('') + '</div>' : '<div class="empty">아직 팀 기록이 없어요.</div>') +
-    sec('팀에 공유된 매뉴얼') + '<div class="group"><button class="row" data-act="tab" data-v="man"><span class="main"><span class="t" style="font-weight:500">매뉴얼 ' + D.manuals.length + '개</span></span>' + I.chev + '</button></div>';
-};
-
-/* --- 팀 일정 --- */
-VIEWS.tcal = p => {
-  const sel = p.sel || todayStr(); const sd = parseYmd(sel); const start = new Date(sd); start.setDate(sd.getDate() - sd.getDay());
-  let strip = ''; for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); const ds = ymd(d); strip += '<button data-act="tSel" data-v="' + ds + '" class="' + (ds === sel ? 'on' : '') + '"><span' + (i === 0 && ds !== sel ? ' style="color:var(--red)"' : '') + '>' + WD[i] + '</span><b>' + d.getDate() + '</b></button>'; }
-  const day = D.schedules.filter(s => s.date === sel).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
-  const un = day.filter(s => !s.who);
-  return '<div class="chipbar">' + spaceChip() + '<button class="navbtn" data-act="newSched" aria-label="팀 일정 추가">' + I.plus + '</button></div>' +
-    '<div class="titlerow"><div class="title" style="padding:0"><h1>팀 일정</h1></div><span style="display:flex"><button class="navbtn" data-act="tWeek" data-v="-7" aria-label="지난주">' + I.back + '</button><button class="navbtn" data-act="tWeek" data-v="7" aria-label="다음 주">' + I.next + '</button></span></div>' +
-    '<div class="strip">' + strip + '</div>' + sec(dayLabel(sel)) +
-    un.map(s => '<div class="reqcard" style="background:var(--tint-bg);display:flex;align-items:center;gap:12px;margin-top:8px"><button class="main" data-act="openSched" data-id="' + esc(s.id) + '" style="flex:1;text-align:left;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--tint-dark)">배정 안 됨 · ' + esc(s.start || '') + '</span><span style="font-size:15px;font-weight:600">' + esc(s.title) + (s.client ? ' · ' + esc(s.client) : '') + '</span></button><button class="chip on" data-act="assign" data-id="' + esc(s.id) + '">기사 배정</button></div>').join('') +
-    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:13px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('') +
-    dayExtra(sel);
-};
 VIEWS.tledger = p => ledgerView(p, true);
 function dayExtra(sel) {
   const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
@@ -612,10 +605,23 @@ ACT.rmPhoto = el => { V.p.d.photos.splice(+el.dataset.i, 1); dirty = true; $('#p
 ACT.pickWho = async () => { const ms = members(); const i = await sheet(ms.map(m => m.name)); if (i >= 0) { V.p.d.who = ms[i].id; dirty = true; render(); } };
 
 /* schedules */
-function schedDraft(s) { return s ? JSON.parse(JSON.stringify(s)) : { title: '', client: '', date: (V.name === 'cal' || V.name === 'tcal') && V.p.sel ? V.p.sel : todayStr(), start: '09:00', end: '10:00', status: '예정', amount: 0, autoSale: true, who: teamOn() ? null : 'me', noteId: null, saleTxId: null }; }
+function schedDraft(s) { return s ? JSON.parse(JSON.stringify(s)) : { title: '', client: '', date: V.name === 'home' && V.p.sel ? V.p.sel : todayStr(), start: '09:00', end: '10:00', status: '예정', amount: 0, autoSale: true, who: teamOn() ? null : 'me', noteId: null, saleTxId: null }; }
 ACT.newSched = () => go('schedEdit', { d: schedDraft() });
 ACT.openSched = el => go('schedEdit', { d: schedDraft(D.schedules.find(s => s.id === el.dataset.id)) });
-ACT.selDay = el => { V.p.sel = el.dataset.v; render(); };
+ACT.selDay = el => {
+  const v = el.dataset.v; if (V.name !== 'home') { go('home', { sel: v }, { root: true }); return; }
+  if (V.p.sel === v || (!V.p.sel && v === todayStr() && el.classList.contains('d'))) { ACT.addOnDay(); return; }
+  V.p.sel = v; V.p.ym = v.slice(0, 7); render();
+};
+ACT.addOnDay = async () => {
+  const sel = V.p.sel || todayStr();
+  const i = await sheet(['일정 추가', '고장 기록 추가', '거래 추가 (매출·매입)'], (sel === todayStr() ? '오늘' : shortDay(sel)) + '에 추가');
+  const fake = { dataset: { v: sel } };
+  if (i === 0) ACT.newSched(); else if (i === 1) ACT.newNote(fake); else if (i === 2) ACT.newTx(fake);
+};
+ACT.openOnly = () => go('records', { onlyOpen: true }, { root: true });
+ACT.recFilter = el => { V.p.onlyOpen = el.dataset.v === '1'; render(); };
+ACT.addManual = async () => { const i = await sheet(['PDF 파일 올리기', '종이 매뉴얼 사진 찍기']); if (i === 0) ACT.addPdf(); else if (i === 1) ACT.addManPhotos(); };
 ACT.calMove = el => { const [Y, M] = (V.p.ym || (V.p.sel || todayStr()).slice(0, 7)).split('-').map(Number); const d = new Date(Y, M - 1 + Number(el.dataset.v), 1); V.p.ym = ymd(d).slice(0, 7); V.p.sel = V.p.ym === todayStr().slice(0, 7) ? todayStr() : V.p.ym + '-01'; render(); };
 ACT.schedStatus = el => { V.p.d.status = el.dataset.v; dirty = true; render(); };
 ACT.tglAutoSale = () => { V.p.d.autoSale = !V.p.d.autoSale; dirty = true; render(); };
@@ -728,7 +734,7 @@ ACT.createTeam = async () => {
 ACT.teamManage = () => go('teamManage');
 ACT.space = async () => {
   if (!D.team) return; const i = await sheet(['개인 공간', D.team.name + ' 팀'], '공간 바꾸기'); if (i < 0) return;
-  D.settings.mode = i === 1 ? 'team' : 'personal'; await saveKV('settings'); go(i === 1 ? 'thome' : 'home', {}, { root: true });
+  D.settings.mode = i === 1 ? 'team' : 'personal'; await saveKV('settings'); go('home', {}, { root: true });
 };
 ACT.toPersonal = async () => { D.settings.mode = 'personal'; await saveKV('settings'); go('home', {}, { root: true }); };
 ACT.renameTeam = async () => { const n = await promptText('팀 이름', D.team.name); if (n) { D.team.name = n; await saveKV('team'); render(); } };
@@ -797,7 +803,7 @@ app.addEventListener('input', e => {
 async function onBack() {
   if (closeTop) { closeTop(); return; }
   if (V.stack.length || !ROOTS[V.name]) { back(); return; }
-  const home = teamOn() ? 'thome' : 'home'; if (V.name !== home) { go(home, {}, { root: true }); return; }
+  if (V.name !== 'home') { go('home', {}, { root: true }); return; }
   if (NATIVE) App.minimizeApp().catch(() => App.exitApp());
 }
 
@@ -805,7 +811,7 @@ async function onBack() {
 (async function boot() {
   app.innerHTML = '<div class="empty">불러오는 중…</div>';
   await load();
-  V = { name: teamOn() ? 'thome' : 'home', p: {}, stack: [] };
+  V = { name: 'home', p: {}, stack: [] };
   render();
   if (NATIVE) App.addListener('backButton', onBack);
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { });
