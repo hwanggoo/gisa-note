@@ -94,7 +94,7 @@ export function buildDemo(team) {
   /* 이번 달 일정: 일요일 빼고 하루 1~3건 */
   const last = new Date(Y, M + 1, 0).getDate(); let waitLeft = 2;
   for (let d = 1; d <= last; d++) {
-    const dt = new Date(Y, M, d); if (dt.getDay() === 0) continue; const ds = ymd(dt);
+    const dt = new Date(Y, M, d); const ds = ymd(dt); if (dt.getDay() === 0 && ds !== today) continue;
     const n = ds === today ? 3 : dt.getDay() === 6 ? 1 + Math.floor(R() * 2) : 2 + Math.floor(R() * 2); let hour = 8 + Math.floor(R() * 2);
     for (let j = 0; j < n; j++) {
       const c = pick(CL); const site = pick(SITES); const dur = 1 + Math.floor(R() * 3); const amt = ri(c.amt[0], c.amt[1]);

@@ -8,7 +8,7 @@ import { AppLauncher } from '@capacitor/app-launcher';
 import { buildDemo } from './demo.js';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -393,7 +393,7 @@ VIEWS.home = p => {
     '<div class="tiles">' +
     tile('selDay" data-v="' + todayStr(), '#2563EB', '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', D.schedules.filter(s => s.date === todayStr()).length, teamOn() ? '오늘 출동' : '오늘 일정') +
     tile('openOnly', '#EA580C', '<path d="M12 7v6M12 17h.01"/>', D.notes.filter(n => !n.resolved).length, '미해결') +
-    tile('tab" data-v="' + (teamOn() ? 'tledger' : 'ledger'), '#15803D', '<path d="M12 3v18M16.5 7.5c-.8-1.2-2.4-2-4.5-2-2.6 0-4.3 1.3-4.3 3.2 0 4.6 9 2.6 9 7.1 0 2-1.9 3.4-4.7 3.4-2.2 0-4-.9-4.9-2.3"/>', man(ms.sale) + '<small>만</small>', (new Date().getMonth() + 1) + '월 매출') +
+    tile('tab" data-v="' + (teamOn() ? 'tledger' : 'ledger'), '#15803D', '<text x="12" y="18" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor" stroke="none" font-family="-apple-system,Roboto,Noto Sans KR,sans-serif">₩</text>', man(ms.sale) + '<small>만</small>', (new Date().getMonth() + 1) + '월 매출') +
     '</div>' +
     '<div class="titlerow" style="margin-top:18px"><b style="font-size:22px;letter-spacing:-.3px">' + Y + '년 ' + M + '월</b><span style="display:flex"><button class="navbtn" data-act="calMove" data-v="-1" aria-label="이전 달">' + I.back + '</button><button class="navbtn" data-act="calMove" data-v="1" aria-label="다음 달">' + I.next + '</button></span></div>' +
     '<div class="cal" style="margin-top:4px"><div class="wk">' + WD.map(w => '<span>' + w + '</span>').join('') + '</div><div class="grid">' + cells + '</div></div>' +
