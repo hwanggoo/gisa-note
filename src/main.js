@@ -424,8 +424,8 @@ function ledgerView(p, team) {
   const ms = monthStats(ym); const per = vatPeriod(ym + '-01'); const v = calcVat(per);
   const list = ms.list.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
   let vat;
-  if (v.simple) vat = '<div class="vatline"><span>매출 ' + man(v.saleTotal) + '만 × 업종 ' + Math.round(D.settings.rate * 100) + '% × 10%</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입 공제 (증빙 매입 ' + man(v.buyTotal) + '만 × 0.5%)</span><span>−' + won(v.ded) + '</span></div>' + (v.exempt ? '<div class="vatline"><span style="color:var(--green)">올해 매출 4,800만 원 미만이면 납부 면제 (신고는 해야 해요)</span></div>' : '');
-  else vat = '<div class="vatline"><span>매출세액 (매출 ' + man(v.saleTotal) + '만 중 부가세)</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입세액 (증빙 매입 ' + man(v.buyTotal) + '만 중)</span><span>−' + won(v.ded) + '</span></div>';
+  if (v.simple) vat = '<div class="vatline"><span>매출 ' + man(v.saleTotal) + '만 × 업종 ' + Math.round(D.settings.rate * 100) + '% × 10%</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입 공제 (증빙 매입 ' + man(v.buyTotal) + '만 × 0.5%)</span><span>' + (v.ded ? '−' + won(v.ded) : '0') + '</span></div>' + (v.exempt ? '<div class="vatline"><span style="color:var(--green)">올해 매출 4,800만 원 미만이면 납부 면제 (신고는 해야 해요)</span></div>' : '');
+  else vat = '<div class="vatline"><span>매출세액 (매출 ' + man(v.saleTotal) + '만 중 부가세)</span><span>' + won(v.out) + '</span></div><div class="vatline"><span>매입세액 (증빙 매입 ' + man(v.buyTotal) + '만 중)</span><span>' + (v.ded ? '−' + won(v.ded) : '0') + '</span></div>';
   const dueD = parseYmd(per.due);
   const head = team ? topBar() + '<div class="titlerow"><div class="title" style="padding:0"><h1>팀 장부</h1></div><span class="lock">' + I.lock + '사장님만 보기</span></div>'
     : topBar() + '<div class="titlerow"><div class="title" style="padding:0"><h1>장부</h1></div>' + monthNav(M) + '</div>';
