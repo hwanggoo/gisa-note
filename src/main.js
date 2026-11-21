@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -236,6 +236,7 @@ function render() {
   renderTabbar();
   const after = AFTER[V.name]; if (after) after(V.p);
 }
+function tabList() { return teamOn() ? [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['ledger', '장부', 'led']]; }
 function ctaFor() {
   switch (V.name) {
     case 'home': { const sel = V.p.sel || todayStr(); return [(sel === todayStr() ? '오늘' : shortDay(sel)) + ' 일정·기록·거래 추가', 'addOnDay']; }
@@ -253,7 +254,7 @@ function renderTabbar() {
   if (cta && cur) { c.style.display = 'flex'; c.dataset.act = cta[1]; c.dataset.v = cta[2] || ''; c.innerHTML = I.plus + '<span>' + esc(cta[0]) + '</span>'; } else c.style.display = 'none';
   if (!cur) { bar.style.display = 'none'; document.body.style.paddingBottom = '40px'; return; }
   bar.style.display = 'grid'; document.body.style.paddingBottom = (V.name === 'talk' && V.p.tab !== 'req') ? '150px' : '170px';
-  const tabs = teamOn() ? [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['ledger', '장부', 'led']];
+  const tabs = tabList();
   bar.style.gridTemplateColumns = 'repeat(' + tabs.length + ',minmax(0,1fr))';
   bar.innerHTML = tabs.map(([v, l, ic]) => '<button data-act="tab" data-v="' + v + '" class="' + (ic === cur ? 'on' : '') + '"' + (ic === cur ? ' aria-current="page"' : '') + ' style="position:relative"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (ic === cur ? 2.1 : 1.8) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TABI[ic] + '</svg>' + (v === 'talk' && newReqCount() ? '<b class="bd">' + newReqCount() + '</b>' : '') + '<span>' + l + '</span></button>').join('');
 }
@@ -800,6 +801,23 @@ app.addEventListener('input', e => {
   else V.p.d[k] = el.value;
   dirty = true;
 });
+/* swipe left/right between tabs */
+let sw0 = null;
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1 || closeTop || !ROOTS[V.name]) { sw0 = null; return; }
+  const t = e.touches[0]; const W = window.innerWidth;
+  if (t.clientX < 28 || t.clientX > W - 28 || e.target.closest('input,textarea,.phrow,.composer,.tabbar,#cta')) { sw0 = null; return; }
+  sw0 = { x: t.clientX, y: t.clientY, t: Date.now() };
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!sw0) return; const t = e.changedTouches[0]; const dx = t.clientX - sw0.x, dy = t.clientY - sw0.y, dt = Date.now() - sw0.t; sw0 = null;
+  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6 || dt > 700) return;
+  const tabs = tabList().map(x => x[0]); const cur = tabs.indexOf(V.name === 'ledger' || V.name === 'tledger' ? (teamOn() ? 'tledger' : 'ledger') : V.name); if (cur < 0) return;
+  const nx = cur + (dx < 0 ? 1 : -1); if (nx < 0 || nx >= tabs.length) return;
+  go(tabs[nx], {}, { root: true });
+  app.classList.remove('slide-l', 'slide-r'); void app.offsetWidth; app.classList.add(dx < 0 ? 'slide-l' : 'slide-r');
+}, { passive: true });
+
 async function onBack() {
   if (closeTop) { closeTop(); return; }
   if (V.stack.length || !ROOTS[V.name]) { back(); return; }
