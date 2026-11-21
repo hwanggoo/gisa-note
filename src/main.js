@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -172,7 +172,7 @@ function showPhoto(pid) {
 }
 
 /* ============ team helpers ============ */
-const COLORS = ['#C2410C', '#2563EB', '#7C3AED', '#0F766E', '#BE185D', '#4D7C0F', '#A16207'];
+const COLORS = ['#1D4ED8', '#C2410C', '#7C3AED', '#0F766E', '#BE185D', '#4D7C0F', '#A16207'];
 const teamOn = () => D.settings.mode === 'team' && !!D.team;
 function members() { return D.team ? D.team.members : [{ id: 'me', name: '나', role: 'owner', color: COLORS[0] }]; }
 function mem(id) { return members().find(m => m.id === id) || { id, name: id === 'me' ? '나' : '알 수 없음', color: '#8E8E93', role: 'tech' }; }
@@ -506,9 +506,9 @@ VIEWS.settings = () => {
     (D.team ? '' : foot('지금 버전의 팀 기능은 이 폰 안에서만 체험할 수 있어요. 여러 폰에서 같이 쓰려면 서버가 필요해요.')) +
     sec('사업자') + '<div class="group">' + item('taxType', '#15803D', sv('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'), '과세 유형', s.taxType === 'simple' ? '간이과세자' : '일반과세자') + (s.taxType === 'simple' ? item('taxRate', '#4D7C0F', sv('<path d="M5 19L19 5M7 7h.01M17 17h.01"/>'), '업종', rateName + ' ' + Math.round(s.rate * 100) + '%') : '') + '</div>' +
     foot(s.taxType === 'simple' ? '간이과세자는 1년에 한 번(다음 해 1월 25일까지) 신고해요. 업종별 부가가치율로 계산해요.' : '일반과세자는 1월과 7월, 1년에 두 번 신고해요.') +
-    sec('백업') + '<div class="group">' + item('exportBackup', '#EA580C', sv('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 내보내기', '') + item('importBackup', '#2563EB', sv('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 불러오기', '') + '</div>' +
+    sec('백업') + '<div class="group">' + item('exportBackup', '#1D4ED8', sv('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 내보내기', '') + item('importBackup', '#2563EB', sv('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 불러오기', '') + '</div>' +
     foot('기록·일정·장부·사진은 이 폰에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 카톡이나 드라이브로 보내두세요. 매뉴얼 파일은 백업에 들어가지 않아요.') +
-    sec('정보') + '<div class="group"><a class="row" href="' + PRIVACY_URL + '" target="_blank" rel="noopener"><span class="ico30" style="background:#636366">' + sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">개인정보처리방침</span></span>' + I.chev + '</a><div class="row"><span class="ico30" style="background:#C2410C">' + sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">버전</span></span><span class="val">' + VERSION + '</span></div></div>';
+    sec('정보') + '<div class="group"><a class="row" href="' + PRIVACY_URL + '" target="_blank" rel="noopener"><span class="ico30" style="background:#636366">' + sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">개인정보처리방침</span></span>' + I.chev + '</a><div class="row"><span class="ico30" style="background:#1D4ED8">' + sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">버전</span></span><span class="val">' + VERSION + '</span></div></div>';
 };
 
 VIEWS.tledger = p => ledgerView(p, true);

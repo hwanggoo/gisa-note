@@ -1,6 +1,6 @@
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --ink:#1C1C1E; --ink2:#3A3A3C; --muted:#6C6C70; --line:#E5E5EA; --fill:#E4E4E9; --fill2:#EFEFF4;
-  --tint:#C2410C; --tint-dark:#9A3412; --tint-bg:#FFF4EC; --orange:#EA580C; --orange-bg:#FFEDD5;
+  --tint:#1D4ED8; --tint-dark:#1E3A8A; --tint-bg:#EEF3FF; --orange:#EA580C; --orange-bg:#FFEDD5;
   --green:#15803D; --green-dot:#16A34A; --green-bg:#DCFCE7; --blue:#1D4ED8; --blue2:#2563EB; --blue-bg:#DBEAFE; --red:#D70015;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -56,7 +56,7 @@ input::placeholder,textarea::placeholder{color:#8E8E93}
 .badge{font-size:12px;font-weight:700}
 .badge.open{color:var(--tint)}.badge.done{color:var(--green)}.badge.wait{color:#B45309}
 .sq{flex:none;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center}
-.sq.open{background:var(--orange-bg);color:var(--tint)}.sq.done{background:var(--green-bg);color:var(--green)}
+.sq.open{background:var(--orange-bg);color:var(--orange)}.sq.done{background:var(--green-bg);color:var(--green)}
 .av{flex:none;width:32px;height:32px;border-radius:16px;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .ico30{flex:none;width:30px;height:30px;border-radius:7px;color:#fff;display:flex;align-items:center;justify-content:center}
 
@@ -73,7 +73,7 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;backgr
 .seg{margin:0 16px;padding:2px;border-radius:9px;background:var(--fill);display:grid;gap:2px}
 .seg button{height:32px;border-radius:7px;font-size:14px;font-weight:600;color:var(--ink2);display:flex;align-items:center;justify-content:center;gap:6px}
 .seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:700;color:var(--ink)}
-.seg button.on.o{color:var(--tint)}.seg button.on.g{color:var(--green)}.seg button.on.bl{color:var(--blue)}
+.seg button.on.o{color:var(--orange)}.seg button.on.g{color:var(--green)}.seg button.on.bl{color:var(--blue)}
 .dot{width:8px;height:8px;border-radius:4px;display:inline-block}
 .sw{flex:none;width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;transition:background .15s}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:14px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:left .15s}
@@ -114,7 +114,7 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;backgr
 .cal .d .n{width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:500}
 .cal .d.sun .n{color:var(--red)}
 .cal .d.today .n{color:var(--tint);font-weight:800}
-.cal .d.sel .n{background:var(--orange);color:#fff;font-weight:700}
+.cal .d.sel .n{background:var(--tint);color:#fff;font-weight:700}
 .cal .d .dots{display:flex;gap:3px;height:5px}
 .cal .d .dots i{width:5px;height:5px;border-radius:3px}
 .legend{display:flex;gap:14px;padding:8px 28px 0;font-size:12px;color:var(--muted)}
@@ -206,7 +206,7 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;backgr
 .spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .frow + .row,.row + .frow,.frow + label.frow{border-top:1px solid var(--line)}
-.cta{position:fixed;left:16px;right:16px;bottom:88px;z-index:25;height:54px;border-radius:16px;background:var(--tint);color:#fff;font-size:17px;font-weight:800;display:none;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 18px rgba(194,65,12,.32);max-width:528px;margin:0 auto}
+.cta{position:fixed;left:16px;right:16px;bottom:88px;z-index:25;height:54px;border-radius:16px;background:var(--tint);color:#fff;font-size:17px;font-weight:800;display:none;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 18px rgba(29,78,216,.30);max-width:528px;margin:0 auto}
 .cta:active{background:var(--tint-dark)}
 .cta svg{width:22px;height:22px;stroke-width:2.6}
 @keyframes inL{from{transform:translateX(40px);opacity:.4}to{transform:none;opacity:1}}
