@@ -215,3 +215,8 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;backgr
 #app.slide-r{animation:inR .18s ease-out}
 html,body{overscroll-behavior-x:none}
 .cta.solo{bottom:calc(16px + env(safe-area-inset-bottom))}
+.modesw{display:flex;background:var(--fill);border-radius:10px;padding:2px;gap:2px;max-width:calc(100% - 56px)}
+.modesw button{height:34px;padding:0 12px;border-radius:8px;display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.modesw button svg{width:16px;height:16px;flex:none}
+.modesw button.on{background:#fff;color:var(--tint);font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.chipbar + .title,.chipbar + .titlerow{margin-top:8px}

@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.3.0';
+const VERSION = '1.3.1';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -41,6 +41,7 @@ const I = {
   lock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   up: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
   dn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  person: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
   people: '<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.8.2 5 2.6 5 5.8"/></svg>',
   pdf: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3-3 3 3"/></svg>',
   send: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
@@ -336,7 +337,8 @@ AFTER.records = p => {
   const q = $('#q'); if (!q) return;
   q.addEventListener('input', () => { V.p.q = q.value; const n = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).filter(x => !V.p.onlyOpen || !x.resolved); const qq = q.value.trim().toLowerCase(); const list = qq ? n.filter(x => { const h = [x.equip, x.symptom, x.cause, x.action, x.site, x.memo].join(' ').toLowerCase(); return qq.split(/\s+/).every(t => h.includes(t)); }) : n; $('#list').innerHTML = homeList(list, qq, teamOn()); });
 };
-const topBar = () => teamOn() ? '<div class="chipbar">' + spaceChip() + '<button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div>' : '<div class="nav"><div class="l"></div><div class="r"><button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div></div>';
+const modeSw = () => { const t = teamOn(); return '<div class="modesw" role="tablist" aria-label="개인·팀 바꾸기"><button data-act="setMode" data-v="personal" class="' + (t ? '' : 'on') + '" aria-selected="' + !t + '">' + I.person + '개인</button><button data-act="setMode" data-v="team" class="' + (t ? 'on' : '') + '" aria-selected="' + t + '">' + I.people + esc(D.team ? D.team.name : '팀') + '</button></div>'; };
+const topBar = () => '<div class="chipbar">' + modeSw() + '<button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div>';
 
 /* --- 기록 상세 --- */
 VIEWS.note = p => {
@@ -534,7 +536,7 @@ VIEWS.talk = p => {
     body = (list.length ? list.map(reqCard).join('') : '<div class="empty">요청이 없어요.<br>팀원이 "부품 없어요"라고 보내면 여기로 와요.</div>') + foot('요청함은 사장님과 요청한 기사 본인만 볼 수 있어요.') +
       '<div style="padding:12px 16px 0"><button class="btn gray" data-act="newReq">구매 요청 만들어보기 (기사 입장 체험)</button></div>';
   }
-  return '<div class="chipbar">' + spaceChip() + '<button class="navbtn" data-act="teamManage" aria-label="팀 관리">' + I.people + '</button></div>' +
+  return '<div class="chipbar">' + modeSw() + '<button class="navbtn" data-act="teamManage" aria-label="팀 관리">' + I.people + '</button></div>' +
     '<div style="margin-top:6px">' + seg([['talk', '팀 대화'], ['req', I.lock + '요청함' + (nreq ? ' <b style="background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px">' + nreq + '</b>' : '')]], tabReq ? 'req' : 'talk', 'talkTab') + '</div>' + body;
 };
 AFTER.talk = p => { if (p.tab !== 'req') { window.scrollTo(0, document.body.scrollHeight); const i = $('#msgIn'); if (i) i.addEventListener('keydown', e => { if (e.key === 'Enter') ACT.sendMsg(); }); } };
@@ -742,6 +744,12 @@ ACT.teamManage = () => go('teamManage');
 ACT.space = async () => {
   if (!D.team) return; const i = await sheet(['개인 공간', D.team.name + ' 팀'], '공간 바꾸기'); if (i < 0) return;
   D.settings.mode = i === 1 ? 'team' : 'personal'; await saveKV('settings'); go('home', {}, { root: true });
+};
+ACT.setMode = async el => {
+  const m = el.dataset.v; if (m === (teamOn() ? 'team' : 'personal')) return;
+  if (m === 'team' && !D.team) { if (await ask('아직 팀이 없어요. 팀을 만들까요?', '팀 만들기')) ACT.createTeam(); return; }
+  D.settings.mode = m; await saveKV('settings'); go('home', {}, { root: true });
+  toast(m === 'team' ? D.team.name + ' 팀으로 바꿨어요' : '개인 모드로 바꿨어요');
 };
 ACT.toPersonal = async () => { D.settings.mode = 'personal'; await saveKV('settings'); go('home', {}, { root: true }); };
 ACT.renameTeam = async () => { const n = await promptText('팀 이름', D.team.name); if (n) { D.team.name = n; await saveKV('team'); render(); } };
