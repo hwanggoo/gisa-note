@@ -100,7 +100,7 @@ export function buildDemo(team) {
       const c = pick(CL); const site = pick(SITES); const dur = 1 + Math.floor(R() * 3); const amt = ri(c.amt[0], c.amt[1]);
       let status = ds < today ? '완료' : ds > today ? '예정' : j === 0 ? '완료' : j === 1 ? '진행 중' : '예정';
       if (status === '예정' && waitLeft && R() < 0.15) { status = '자재 대기'; waitLeft--; }
-      const s = { id: id('s'), demo: true, title: c.job, client: site[0], addr: site[1], date: ds, start: p2(hour) + ':' + (R() < 0.5 ? '00' : '30'), end: p2(Math.min(hour + dur, 20)) + ':00', status, amount: amt, autoSale: true, who: who(), noteId: null, saleTxId: null, createdAt: dt.getTime(), updatedAt: dt.getTime() };
+      const mm = R() < 0.5 ? '00' : '30'; const s = { id: id('s'), demo: true, title: c.job, client: site[0], addr: site[1], date: ds, start: p2(hour) + ':' + mm, end: p2(Math.min(hour + dur, 20)) + ':' + mm, status, amount: amt, autoSale: true, who: who(), noteId: null, saleTxId: null, createdAt: dt.getTime(), updatedAt: dt.getTime() };
       hour = Math.min(hour + dur + 1, 17);
       if (status === '완료') {
         const t = Object.assign({ id: id('t'), demo: true, createdAt: dt.getTime(), type: 'sale', vatIncl: true, date: ds, party: site[0], memo: c.job, proof: '', who: s.who, schedId: s.id, photos: [] }, split(amt));

@@ -8,7 +8,7 @@ import { AppLauncher } from '@capacitor/app-launcher';
 import { buildDemo } from './demo.js';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.5.1';
+const VERSION = '1.6.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -402,15 +402,15 @@ VIEWS.home = p => {
 };
 function teamDay(day) {
   const un = day.filter(s => !s.who);
-  return un.map(s => '<div class="reqcard" style="background:var(--tint-bg);display:flex;align-items:center;gap:12px;margin-top:10px"><button class="main" data-act="openSched" data-id="' + esc(s.id) + '" style="flex:1;text-align:left;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:700;color:var(--tint-dark)">배정 안 됨 · ' + esc(s.start || '') + '</span><span style="font-size:15px;font-weight:600">' + esc(s.title) + (s.client ? ' · ' + esc(s.client) : '') + '</span></button><button class="chip on" data-act="assign" data-id="' + esc(s.id) + '">기사 배정</button></div>').join('') +
-    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:13px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('');
+  return un.map(s => '<div class="reqcard" style="background:var(--tint-bg);display:flex;align-items:center;gap:12px;margin-top:10px"><button class="main" data-act="openSched" data-id="' + esc(s.id) + '" style="flex:1;text-align:left;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700;color:var(--tint-dark)">배정 안 됨 · ' + esc(s.start || '') + '</span><span style="font-size:15px;font-weight:600">' + esc(s.title) + (s.client ? ' · ' + esc(s.client) : '') + '</span></button><button class="chip on" data-act="assign" data-id="' + esc(s.id) + '">기사 배정</button></div>').join('') +
+    members().map(m => { const l = day.filter(s => s.who === m.id); return '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px;padding:0 28px">' + av(m.id, 24) + '<b style="font-size:14px">' + esc(m.name) + (m.role === 'owner' ? ' (사장)' : '') + '</b><span style="font-size:14px;color:var(--muted)">' + l.length + '건</span></div><div class="group">' + (l.length ? l.map(s => schedRow(s, false)).join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">일정 없음</span></div>') + '</div>'; }).join('');
 }
 function dayBlock(sel, scheds, showWho) {
   const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
   const txs = D.txs.filter(t => t.date === sel).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const sale = txs.filter(t => t.type === 'sale').reduce((a, t) => a + t.total, 0), buy = txs.filter(t => t.type === 'buy').reduce((a, t) => a + t.total, 0);
   const sum = [scheds.length ? '일정 ' + scheds.length : '', notes.length ? '기록 ' + notes.length : '', sale ? '매출 ' + won(sale) + '원' : '', buy ? '매입 ' + won(buy) + '원' : ''].filter(Boolean).join(' · ');
-  return '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:22px 0 0;padding:0 20px 0 32px"><div><p style="margin:0;font-size:17px;font-weight:800">' + dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '') + '</p><p style="margin:2px 0 0;font-size:13px;color:var(--muted)">' + (sum || '이날은 아직 아무것도 없어요') + '</p></div></div>' +
+  return '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:22px 0 0;padding:0 20px 0 32px"><div><p style="margin:0;font-size:17px;font-weight:800">' + dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '') + '</p><p style="margin:2px 0 0;font-size:14px;color:var(--muted)">' + (sum || '이날은 아직 아무것도 없어요') + '</p></div></div>' +
     (teamOn() ? teamDay(scheds) : sec('일정 ' + scheds.length) + '<div class="group">' + (scheds.length ? scheds.map(s => schedRow(s, false)).join('') : '<button class="row" data-act="addOnDay"><span class="main"><span class="s">일정이 없어요. 아래 주황 버튼으로 추가하세요.</span></span></button>') + '</div>') +
     (notes.length ? sec('트러블슈팅 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, teamOn())).join('') + '</div>' : '') +
     (txs.length ? sec('거래 ' + txs.length + (sale ? ' · 매출 +' + won(sale) : '') + (buy ? ' · 매입 −' + won(buy) : '')) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
@@ -449,7 +449,7 @@ function ledgerView(p, team) {
     : topBar() + '<div class="titlerow"><div class="title" style="padding:0"><h1>장부</h1></div>' + monthNav(M) + '</div>';
   const memberBlock = team ? memberStats(ym) : '';
   return head + (team ? '<div style="display:flex;justify-content:flex-end;padding:8px 12px 0">' + monthNav(M) + '</div>' : '') +
-    '<div class="card"><p style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--muted)">' + Y + '년 ' + M + '월 · 거래 ' + ms.list.length + '건</p><div class="stats"><div><span>매출</span><b style="color:var(--blue)">' + man(ms.sale) + '만</b></div><div><span>매입</span><b>' + man(ms.buy) + '만</b></div><div><span>남은 돈</span><b style="color:var(--green)">' + man(ms.net) + '만</b></div></div></div>' +
+    '<div class="card"><p style="margin:0 0 10px;font-size:14px;font-weight:600;color:var(--muted)">' + Y + '년 ' + M + '월 · 거래 ' + ms.list.length + '건</p><div class="stats"><div><span>매출</span><b style="color:var(--blue)">' + man(ms.sale) + '만</b></div><div><span>매입</span><b>' + man(ms.buy) + '만</b></div><div><span>남은 돈</span><b style="color:var(--green)">' + man(ms.net) + '만</b></div></div></div>' +
     memberBlock +
     '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700">예상 부가세 · ' + esc(per.name) + '</span><button class="tag" data-act="go" data-v="settings">' + (D.settings.taxType === 'simple' ? '간이과세자' : '일반과세자') + '</button></div>' +
     '<div style="margin:6px 0 10px;font-size:30px;font-weight:800;letter-spacing:-.5px">' + (v.pay < 0 ? '환급 ' + won(-v.pay) : won(v.pay)) + '<span style="font-size:18px">원</span></div>' + vat +
@@ -461,13 +461,13 @@ const monthNav = M => '<span style="display:flex;align-items:center"><button cla
 function txRow(t) {
   const sale = t.type === 'sale';
   return '<button class="row" data-act="openTx" data-id="' + esc(t.id) + '"><span class="circ" style="background:' + (sale ? 'var(--blue-bg)' : 'var(--fill2)') + ';color:' + (sale ? 'var(--blue)' : 'var(--ink2)') + '">' + (sale ? I.up : I.dn) + '</span>' +
-    '<span class="main"><span class="t" style="font-size:15px">' + esc(t.memo || (sale ? '매출' : '매입')) + (t.party ? ' · ' + esc(t.party) : '') + '</span><span class="s" style="font-size:13px">' + esc(shortDay(t.date)) + (sale ? '' : ' · ' + esc(t.proof || '없음')) + (teamOn() && t.who ? ' · ' + esc(mem(t.who).name) : '') + '</span></span>' +
+    '<span class="main"><span class="t" style="font-size:15px">' + esc(t.memo || (sale ? '매출' : '매입')) + (t.party ? ' · ' + esc(t.party) : '') + '</span><span class="s" style="font-size:14px">' + esc(shortDay(t.date)) + (sale ? '' : ' · ' + esc(t.proof || '없음')) + (teamOn() && t.who ? ' · ' + esc(mem(t.who).name) : '') + '</span></span>' +
     '<span style="font-size:16px;font-weight:700;color:' + (sale ? 'var(--blue)' : 'var(--ink)') + '">' + (sale ? '+' : '−') + won(t.total) + '</span></button>';
 }
 function memberStats(ym) {
   const ms = members().map(m => { const l = D.txs.filter(t => monthKey(t.date) === ym && t.type === 'sale' && (t.who || 'me') === m.id); return { m, sum: l.reduce((a, t) => a + t.total, 0), n: l.length }; });
   const max = Math.max(1, ...ms.map(x => x.sum));
-  return sec('기사별 매출') + '<div class="group">' + ms.map(x => '<div class="row">' + av(x.m.id) + '<span class="main" style="gap:6px"><span style="display:flex;justify-content:space-between;font-size:15px"><span style="font-weight:600">' + esc(x.m.name) + ' <span style="font-weight:400;color:var(--muted);font-size:13px">' + x.n + '건</span></span><b>' + man(x.sum) + '만</b></span><span class="bar"><i style="width:' + Math.round(x.sum / max * 100) + '%;background:' + x.m.color + '"></i></span></span></div>').join('') + '</div>';
+  return sec('기사별 매출') + '<div class="group">' + ms.map(x => '<div class="row">' + av(x.m.id) + '<span class="main" style="gap:6px"><span style="display:flex;justify-content:space-between;font-size:15px"><span style="font-weight:600">' + esc(x.m.name) + ' <span style="font-weight:400;color:var(--muted);font-size:14px">' + x.n + '건</span></span><b>' + man(x.sum) + '만</b></span><span class="bar"><i style="width:' + Math.round(x.sum / max * 100) + '%;background:' + x.m.color + '"></i></span></span></div>').join('') + '</div>';
 }
 
 /* --- 거래 편집 --- */
@@ -493,7 +493,7 @@ VIEWS.man = () => {
   return topBar() +
     '<div class="title"><h1>매뉴얼</h1><p class="sub">영어·일본어 매뉴얼을 한곳에 보관해요</p></div>' +
     '<div class="note">한국어 설치 순서로 정리해주는 AI 기능은 서버를 붙인 다음 버전에서 열려요. 지금은 매뉴얼을 모아두고 바로 꺼내볼 수 있어요.</div>' +
-    sec('내 매뉴얼' + (list.length ? ' ' + list.length : '')) + '<div class="group">' + (list.length ? list.map(m => '<button class="row" data-act="openMan" data-id="' + esc(m.id) + '"><span class="doc">' + esc(m.lang || 'EN') + '</span><span class="main"><span class="t" style="font-size:15px">' + esc(m.name) + '</span><span class="s" style="font-size:13px">' + (m.kind === 'pdf' ? 'PDF · ' + (m.size / 1048576).toFixed(1) + 'MB' : '사진 ' + m.files.length + '장') + ' · ' + esc(relTime(m.created)) + '</span></span>' + I.chev + '</button>').join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">아직 올린 매뉴얼이 없어요.</span></div>') + '</div>';
+    sec('내 매뉴얼' + (list.length ? ' ' + list.length : '')) + '<div class="group">' + (list.length ? list.map(m => '<button class="row" data-act="openMan" data-id="' + esc(m.id) + '"><span class="doc">' + esc(m.lang || 'EN') + '</span><span class="main"><span class="t" style="font-size:15px">' + esc(m.name) + '</span><span class="s" style="font-size:14px">' + (m.kind === 'pdf' ? 'PDF · ' + (m.size / 1048576).toFixed(1) + 'MB' : '사진 ' + m.files.length + '장') + ' · ' + esc(relTime(m.created)) + '</span></span>' + I.chev + '</button>').join('') : '<div class="row"><span class="s" style="color:var(--muted);font-size:14px">아직 올린 매뉴얼이 없어요.</span></div>') + '</div>';
 };
 VIEWS.manDetail = p => {
   const m = D.manuals.find(x => x.id === p.id); if (!m) return '<div class="empty">매뉴얼이 없어요</div>';
@@ -548,7 +548,7 @@ VIEWS.talk = p => {
       '<div style="padding:12px 16px 0"><button class="btn gray" data-act="newReq">구매 요청 만들어보기 (기사 입장 체험)</button></div>';
   }
   return '<div class="chipbar">' + modeSw() + '<button class="navbtn" data-act="teamManage" aria-label="팀 관리">' + I.people + '</button></div>' +
-    '<div style="margin-top:6px">' + seg([['talk', '팀 대화'], ['req', I.lock + '요청함' + (nreq ? ' <b style="background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:11px">' + nreq + '</b>' : '')]], tabReq ? 'req' : 'talk', 'talkTab') + '</div>' + body;
+    '<div style="margin-top:6px">' + seg([['talk', '팀 대화'], ['req', I.lock + '요청함' + (nreq ? ' <b style="background:var(--red);color:#fff;border-radius:9px;padding:0 6px;font-size:12px">' + nreq + '</b>' : '')]], tabReq ? 'req' : 'talk', 'talkTab') + '</div>' + body;
 };
 AFTER.talk = p => { if (p.tab !== 'req') { window.scrollTo(0, document.body.scrollHeight); const i = $('#msgIn'); if (i) i.addEventListener('keydown', e => { if (e.key === 'Enter') ACT.sendMsg(); }); } };
 function reqCard(r) {
@@ -558,9 +558,9 @@ function reqCard(r) {
   let acts = '';
   if (r.status === 'new' || r.status === 'held') acts = '<div class="btn2"><button style="background:var(--fill2)" data-act="reqHold" data-id="' + r.id + '">' + (r.status === 'held' ? '보류 중' : '보류') + '</button><button style="background:var(--tint);color:#fff" data-act="reqApprove" data-id="' + r.id + '">승인</button></div>';
   else if (r.status === 'approved') acts = '<button class="btn1" style="width:100%;margin-top:12px;background:var(--fill2)" data-act="reqDone" data-id="' + r.id + '">구매 완료 → 장부 매입에 기록</button>';
-  return '<div class="reqcard"><div class="reqhead">' + av(r.by, 28) + '<b style="font-size:14px">' + esc(mem(r.by).name) + '</b><span style="font-size:13px;color:var(--muted)">' + esc(relTime(r.created)) + '</span><span style="flex:1"></span><span class="pill2" style="background:' + pill[1] + ';color:' + pill[2] + '">' + pill[0] + '</span>' + when + '</div>' +
+  return '<div class="reqcard"><div class="reqhead">' + av(r.by, 28) + '<b style="font-size:14px">' + esc(mem(r.by).name) + '</b><span style="font-size:14px;color:var(--muted)">' + esc(relTime(r.created)) + '</span><span style="flex:1"></span><span class="pill2" style="background:' + pill[1] + ';color:' + pill[2] + '">' + pill[0] + '</span>' + when + '</div>' +
     '<div style="display:flex;gap:12px;margin-top:10px"><div style="flex:1;min-width:0"><p style="margin:0;font-size:17px;font-weight:700">' + esc(r.item) + (r.qty ? ' ' + esc(r.qty) : '') + '</p>' + (r.memo ? '<p style="margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.4">' + esc(r.memo) + '</p>' : '') +
-    '<p style="margin:6px 0 0;font-size:13px;color:var(--muted)">' + esc(r.kind) + (sched ? ' · ' + esc(sched.title) + (r.hold ? ' (자재 대기)' : '') : '') + (r.status === 'done' && r.amount ? ' · ' + won(r.amount) + '원 장부 기록됨' : '') + '</p></div>' +
+    '<p style="margin:6px 0 0;font-size:14px;color:var(--muted)">' + esc(r.kind) + (sched ? ' · ' + esc(sched.title) + (r.hold ? ' (자재 대기)' : '') : '') + (r.status === 'done' && r.amount ? ' · ' + won(r.amount) + '원 장부 기록됨' : '') + '</p></div>' +
     (r.photo ? '<button class="ph" style="width:64px;height:64px" data-act="viewPhoto" data-id="' + esc(r.photo) + '"><img alt="첨부 사진" data-pid="' + esc(r.photo) + '"></button>' : '') + '</div>' + acts + '</div>';
 }
 VIEWS.reqNew = p => {
@@ -580,9 +580,9 @@ VIEWS.reqNew = p => {
 VIEWS.teamManage = () => {
   const t = D.team; if (!t) return '';
   return navBack('뒤로') + '<div class="title"><h1>팀 관리</h1></div>' +
-    '<div class="card"><p style="margin:0;font-size:13px;font-weight:600;color:var(--muted)">팀 이름</p><button data-act="renameTeam" style="font-size:22px;font-weight:800;margin-top:2px">' + esc(t.name) + ' <span style="font-size:14px;color:var(--tint);font-weight:600">바꾸기</span></button>' +
-    '<p style="margin:12px 0 0;font-size:13px;font-weight:600;color:var(--muted)">초대 코드</p><div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px"><span style="font-size:22px;font-weight:800;letter-spacing:1px">' + esc(t.code) + '</span><button class="chip on" data-act="invite">카톡으로 초대</button></div>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">팀 요금 예시 · ' + t.members.length + '명 × 9,900원 = 월 ' + won(t.members.length * 9900) + '원</p></div>' +
+    '<div class="card"><p style="margin:0;font-size:14px;font-weight:600;color:var(--muted)">팀 이름</p><button data-act="renameTeam" style="font-size:22px;font-weight:800;margin-top:2px">' + esc(t.name) + ' <span style="font-size:14px;color:var(--tint);font-weight:600">바꾸기</span></button>' +
+    '<p style="margin:12px 0 0;font-size:14px;font-weight:600;color:var(--muted)">초대 코드</p><div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px"><span style="font-size:22px;font-weight:800;letter-spacing:1px">' + esc(t.code) + '</span><button class="chip on" data-act="invite">카톡으로 초대</button></div>' +
+    '<p style="margin:10px 0 0;font-size:14px;color:var(--muted)">팀 요금 예시 · ' + t.members.length + '명 × 9,900원 = 월 ' + won(t.members.length * 9900) + '원</p></div>' +
     sec('팀원 ' + t.members.length) + '<div class="group">' + t.members.map(m => '<button class="row" data-act="memberMenu" data-id="' + esc(m.id) + '">' + av(m.id) + '<span class="main"><span class="t">' + esc(m.name) + '</span><span class="s">' + (m.role === 'owner' ? '사장 · 장부 전체 보기' : '기사') + '</span></span>' + (m.id === 'me' ? '<span class="val">나</span>' : I.chev) + '</button>').join('') + '<button class="row" data-act="addMember"><span class="main"><span class="t" style="color:var(--tint)">+ 팀원 추가 (체험)</span></span></button></div>' +
     foot('지금은 이 폰 안에서만 팀원을 만들어 체험할 수 있어요.') +
     sec('권한') + '<div class="group">' + [['share', '기사끼리 트러블슈팅 공유'], ['techLedger', '기사도 팀 장부 보기']].map(([k, l]) => '<div class="frow"><span style="flex:1">' + l + '</span>' + sw(D.settings.perms[k], 'perm" data-v="' + k, l) + '</div>').join('') + '</div>' +

@@ -1,11 +1,12 @@
+@font-face{font-family:"Pretendard";font-weight:45 920;font-style:normal;font-display:swap;src:url("fonts/PretendardVariable.woff2") format("woff2-variations")}
 :root{
-  --bg:#F2F2F7; --card:#FFFFFF; --ink:#1C1C1E; --ink2:#3A3A3C; --muted:#6C6C70; --line:#E5E5EA; --fill:#E4E4E9; --fill2:#EFEFF4;
+  --bg:#F2F2F7; --card:#FFFFFF; --ink:#1C1C1E; --ink2:#3A3A3C; --muted:#5E5E64; --line:#E5E5EA; --fill:#E4E4E9; --fill2:#EFEFF4;
   --tint:#1D4ED8; --tint-dark:#1E3A8A; --tint-bg:#EEF3FF; --orange:#EA580C; --orange-bg:#FFEDD5;
   --green:#15803D; --green-dot:#16A34A; --green-bg:#DCFCE7; --blue:#1D4ED8; --blue2:#2563EB; --blue-bg:#DBEAFE; --red:#D70015;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
-body{font-family:-apple-system,"SF Pro Text","Noto Sans KR",system-ui,sans-serif;font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%;padding-bottom:110px}
+body{font-family:"Pretendard",-apple-system,"Noto Sans KR",system-ui,sans-serif;font-size:16px;line-height:1.5;letter-spacing:-.1px;-webkit-text-size-adjust:100%;padding-bottom:110px}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none;padding:0}
 a{color:var(--tint);text-decoration:none}
@@ -54,7 +55,7 @@ input::placeholder,textarea::placeholder{color:#8E8E93}
 .row .val{font-size:15px;color:var(--muted)}
 .chev{flex:none;width:8px;height:14px}
 .badge{font-size:12px;font-weight:700}
-.badge.open{color:var(--tint)}.badge.done{color:var(--green)}.badge.wait{color:#B45309}
+.badge.open{color:var(--orange)}.badge.done{color:var(--green)}.badge.wait{color:#B45309}
 .sq{flex:none;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center}
 .sq.open{background:var(--orange-bg);color:var(--orange)}.sq.done{background:var(--green-bg);color:var(--green)}
 .av{flex:none;width:32px;height:32px;border-radius:16px;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
@@ -221,3 +222,56 @@ html,body{overscroll-behavior-x:none}
 .modesw button.on{background:#fff;color:var(--tint);font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .chipbar + .title,.chipbar + .titlerow{margin-top:8px}
 .tile .num.sm{font-size:17px;letter-spacing:-.6px}.tile .num.sm small{font-size:12px}
+
+/* ===== 글자 체계 (1.6) ===== */
+.title h1{font-size:30px;font-weight:800;letter-spacing:-.8px;color:#111114}
+.title .sub{font-size:15px;font-weight:500}
+.navtitle{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.sec{margin:26px 0 8px;font-size:14px;font-weight:700;color:#4A4A50;letter-spacing:-.1px}
+.foot{font-size:14px;line-height:1.55}
+.row{min-height:52px;padding:11px 14px}
+.row .t{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.row .s{font-size:14px;font-weight:400}
+.row .side{font-size:13px}
+.row .val{font-size:15px}
+.badge{font-size:13px;font-weight:700}
+.frow{min-height:52px}
+.frow .k{font-size:16px;font-weight:600;color:var(--ink2)}
+.frow input,.frow textarea,.frow select{font-size:17px}
+.kv .k{font-size:14px;font-weight:600}
+.kv .v{font-size:17px;line-height:1.55}
+.seg button{font-size:15px}
+.tile .lb{font-size:14px;font-weight:600}
+.cal .wk span{font-size:13px}
+.cal .d .n{font-size:17px;font-weight:600}
+.legend{font-size:13px}
+.time b{font-size:16px;font-weight:700}.time span{font-size:13px}
+.strip button span{font-size:13px}
+.stats span{font-size:14px}
+.stats b{font-size:20px}
+.vatline{font-size:15px}
+.due{font-size:15px}
+.tag,.pill2{font-size:13px}
+.msg .who{font-size:13px}
+.msg .bub{font-size:16px;line-height:1.5}
+.empty{font-size:16px;line-height:1.6}.empty h2{font-size:20px;font-weight:800}
+.tabbar button span{font-size:12px;font-weight:600}
+.tabbar button.on span{font-weight:800}
+.modal .box p{font-size:17px;line-height:1.5}
+.sheet .grp .hd{font-size:14px}
+#toast{font-size:15px}
+.note,.pin{font-size:15px;line-height:1.55}
+.tile .num,.stats b,.bigamt input,.time b,.cal .d .n,.row .val,.vatline,.due b,.reqcard b{font-variant-numeric:tabular-nums}
+body{font-weight:450}
+.row .t{font-weight:650}
+.row .s{font-weight:450}
+.frow .k{font-weight:650;color:var(--ink)}
+.frow input,.frow textarea,.frow select{font-weight:500}
+.kv .v{font-weight:500}
+.sec{font-weight:750}
+.seg button{font-weight:650}.seg button.on{font-weight:800}
+.tile .lb,.stats span{font-weight:650}
+.foot{font-weight:450}
+.navbtn{font-weight:550}
+.sheet .grp button{font-weight:550}
+.time{width:66px}.time span{white-space:nowrap}
