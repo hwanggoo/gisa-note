@@ -4,9 +4,10 @@ import { Camera, MediaTypeSelection } from '@capacitor/camera';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
+import { AppLauncher } from '@capacitor/app-launcher';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.3.1';
+const VERSION = '1.4.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -36,6 +37,7 @@ const I = {
   search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
   wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>',
   pen: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+  navi: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg>',
   check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   cam: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   lock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
@@ -238,11 +240,11 @@ function render() {
   renderTabbar();
   const after = AFTER[V.name]; if (after) after(V.p);
 }
-function tabList() { return teamOn() ? [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '홈', 'home'], ['records', '기록', 'rec'], ['man', '매뉴얼', 'man'], ['ledger', '장부', 'led']]; }
+function tabList() { return teamOn() ? [['home', '홈', 'home'], ['records', '트러블슈팅', 'rec'], ['tledger', '장부', 'led'], ['talk', '소통', 'talk']] : [['home', '홈', 'home'], ['records', '트러블슈팅', 'rec'], ['ledger', '장부', 'led']]; }
 function ctaFor() {
   switch (V.name) {
     case 'home': { const sel = V.p.sel || todayStr(); return [(sel === todayStr() ? '오늘' : shortDay(sel)) + ' 일정·기록·거래 추가', 'addOnDay']; }
-    case 'records': return ['새 고장 기록', 'newNote'];
+    case 'records': return ['트러블슈팅 추가', 'newNote'];
     case 'man': return ['매뉴얼 올리기', 'addManual'];
     case 'ledger': case 'tledger': return ['거래 추가', 'newTx'];
     case 'talk': return V.p.tab === 'req' ? ['구매 요청', 'newReq'] : null;
@@ -250,7 +252,7 @@ function ctaFor() {
     case 'schedEdit': return ['저장', 'saveSched', '', 'check'];
     case 'txEdit': return ['저장', 'saveTx', '', 'check'];
     case 'reqNew': return ['요청 보내기', 'sendReq', '', 'check'];
-    case 'note': return ['기록 편집', 'editNote', V.p.id, 'edit'];
+    case 'note': return ['편집', 'editNote', V.p.id, 'edit'];
   }
   return null;
 }
@@ -318,8 +320,8 @@ VIEWS.records = p => {
   if (q) { const qt = q.split(/\s+/); list = list.filter(n => { const h = [n.equip, n.symptom, n.cause, n.action, n.site, n.memo].join(' ').toLowerCase(); return qt.every(t => h.includes(t)); }); }
   const open = D.notes.filter(n => !n.resolved).length;
   return topBar() +
-    '<div class="title"><h1>고장 기록</h1><p class="sub">전체 ' + D.notes.length + '건 · 미해결 ' + open + '건</p></div>' +
-    '<div class="search"><label>' + I.search + '<span class="sr">기록 검색</span><input id="q" type="search" placeholder="장비, 모델명, 증상 검색" value="' + esc(p.q || '') + '" autocomplete="off"></label></div>' +
+    '<div class="title"><h1>트러블슈팅</h1><p class="sub">전체 ' + D.notes.length + '건 · 미해결 ' + open + '건</p></div>' +
+    '<div class="search"><label>' + I.search + '<span class="sr">트러블슈팅 검색</span><input id="q" type="search" placeholder="장비, 모델명, 증상 검색" value="' + esc(p.q || '') + '" autocomplete="off"></label></div>' +
     '<div class="chips" style="margin-top:10px"><button class="chip' + (!p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="0">전체</button><button class="chip' + (p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="1">미해결만</button></div>' +
     '<div id="list">' + homeList(list, q, teamOn()) + '</div>';
 };
@@ -327,7 +329,7 @@ function tile(act, color, icon, num, label) {
   return '<button class="tile" data-act="' + act + '"><span class="top"><span class="ic" style="background:' + color + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span><span class="num">' + num + '</span></span><span class="lb">' + label + '</span></button>';
 }
 function homeList(list, q, withAv) {
-  if (!D.notes.length) return '<div class="empty"><h2>첫 기록을 남겨보세요</h2>아래 주황색 버튼을 눌러<br>장비, 증상, 원인, 조치를 적으면<br>다음에 같은 고장을 바로 찾을 수 있어요.</div>';
+  if (!D.notes.length) return '<div class="empty"><h2>첫 트러블슈팅을 남겨보세요</h2>아래 파란 버튼을 눌러<br>장비, 증상, 원인, 조치를 적으면<br>다음에 같은 고장을 바로 찾을 수 있어요.</div>';
   if (!list.length) return '<div class="empty">' + (q ? '"' + esc(q) + '"에 맞는 기록이 없어요' : '해당하는 기록이 없어요') + '</div>';
   if (q) return sec(list.length + '건 찾음') + '<div class="group">' + list.map(n => noteRow(n, withAv)).join('') + '</div>';
   const g = groupByDate(list);
@@ -360,7 +362,7 @@ VIEWS.noteEdit = p => {
   const d = p.d;
   const fr = (k, l, ph) => '<label class="frow"><span class="k">' + l + '</span><input data-in="' + k + '" value="' + esc(d[k]) + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>';
   const ta = (k, l, ph) => '<label class="frow top"><span class="k">' + l + '</span><textarea data-in="' + k + '" rows="2" placeholder="' + esc(ph) + '">' + esc(d[k]) + '</textarea></label>';
-  return sheetNav(d.id ? '기록 편집' : '새 기록', '저장', 'saveNote') +
+  return sheetNav(d.id ? '트러블슈팅 편집' : '새 트러블슈팅', '저장', 'saveNote') +
     '<div class="group mt">' + fr('equip', '장비', '예) 시스템 에어컨 실외기') + fr('site', '현장', '건물, 층, 고객 이름') + '</div>' +
     sec('고장 내용') + '<div class="group">' + ta('symptom', '증상', '어떤 문제가 있었나요?') + ta('cause', '원인', '원인이 뭐였나요?') + ta('action', '조치', '어떻게 해결했나요?') + '</div>' +
     sec('상태') + seg([['0', '<span class="dot" style="background:var(--orange)"></span>미해결', 'o'], ['1', '해결', 'g']], d.resolved ? '1' : '0', 'draftResolved') +
@@ -408,7 +410,7 @@ function dayBlock(sel, scheds, showWho) {
   const sum = [scheds.length ? '일정 ' + scheds.length : '', notes.length ? '기록 ' + notes.length : '', sale ? '매출 ' + won(sale) + '원' : '', buy ? '매입 ' + won(buy) + '원' : ''].filter(Boolean).join(' · ');
   return '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin:22px 0 0;padding:0 20px 0 32px"><div><p style="margin:0;font-size:17px;font-weight:800">' + dayLabel(sel) + (sel === todayStr() ? ' · 오늘' : '') + '</p><p style="margin:2px 0 0;font-size:13px;color:var(--muted)">' + (sum || '이날은 아직 아무것도 없어요') + '</p></div></div>' +
     (teamOn() ? teamDay(scheds) : sec('일정 ' + scheds.length) + '<div class="group">' + (scheds.length ? scheds.map(s => schedRow(s, false)).join('') : '<button class="row" data-act="addOnDay"><span class="main"><span class="s">일정이 없어요. 아래 주황 버튼으로 추가하세요.</span></span></button>') + '</div>') +
-    (notes.length ? sec('고장 기록 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, teamOn())).join('') + '</div>' : '') +
+    (notes.length ? sec('트러블슈팅 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, teamOn())).join('') + '</div>' : '') +
     (txs.length ? sec('거래 ' + txs.length + (sale ? ' · 매출 +' + won(sale) : '') + (buy ? ' · 매입 −' + won(buy) : '')) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
 }
 
@@ -416,13 +418,14 @@ function dayBlock(sel, scheds, showWho) {
 VIEWS.schedEdit = p => {
   const d = p.d; const sale = d.saleTxId ? D.txs.find(t => t.id === d.saleTxId) : null; const note = d.noteId ? D.notes.find(n => n.id === d.noteId) : null;
   return sheetNav(d.id ? '일정' : '새 일정', '저장', 'saveSched') +
-    '<div class="group mt"><label class="frow"><span class="k">작업</span><input data-in="title" value="' + esc(d.title) + '" placeholder="예) 에어컨 실외기 수리"></label><label class="frow"><span class="k">고객</span><input data-in="client" value="' + esc(d.client) + '" placeholder="현장, 담당자 이름"></label></div>' +
+    '<div class="group mt"><label class="frow"><span class="k">작업</span><input data-in="title" value="' + esc(d.title) + '" placeholder="예) 에어컨 실외기 수리"></label><label class="frow"><span class="k">고객</span><input data-in="client" value="' + esc(d.client) + '" placeholder="현장, 담당자 이름"></label><label class="frow"><span class="k">주소</span><input data-in="addr" value="' + esc(d.addr || '') + '" placeholder="예) 수원시 영통구 광교로 123"></label></div>' +
+    ('<div class="group" id="navg" style="margin-top:10px;display:' + ((d.addr || '').trim() ? 'block' : 'none') + '"><button class="row" data-act="navGo" data-v="' + esc((d.addr || '').trim()) + '"><span class="ico30" style="background:var(--tint)">' + I.navi + '</span><span class="main"><span class="t" style="color:var(--tint);font-weight:700">길찾기</span><span class="s">카카오맵 · 네이버지도 · 티맵</span></span>' + I.chev + '</button></div>') +
     sec('날짜와 시간') + '<div class="group"><label class="frow"><span class="k" style="flex:1">날짜</span><input type="date" data-in="date" value="' + esc(d.date) + '"></label><label class="frow"><span class="k" style="flex:1">시작</span><input type="time" data-in="start" value="' + esc(d.start) + '"></label><label class="frow"><span class="k" style="flex:1">끝</span><input type="time" data-in="end" value="' + esc(d.end) + '"></label></div>' +
     sec('상태') + seg([['예정', '예정'], ['진행 중', '진행 중', 'o'], ['자재 대기', '자재 대기', 'o'], ['완료', '완료', 'g']], d.status, 'schedStatus') +
     (teamOn() ? sec('담당 기사') + '<div class="group"><button class="row" data-act="pickAssignee"><span class="main"><span class="t">' + (d.who ? esc(mem(d.who).name) : '배정 안 됨') + '</span></span><span class="val">바꾸기</span>' + I.chev + '</button></div>' : '') +
     sec('금액') + '<div class="group"><label class="frow"><span class="k">받을 돈</span><input class="r" inputmode="numeric" data-in="amount" data-num="1" value="' + (d.amount ? won(d.amount) : '') + '" placeholder="0"><span class="unit">원</span></label><div class="frow"><span style="flex:1">완료하면 매출로 기록</span>' + sw(d.autoSale, 'tglAutoSale', '완료하면 매출로 기록') + '</div></div>' +
     foot(sale ? '장부에 매출 ' + won(sale.total) + '원으로 기록돼 있어요.' : '상태를 완료로 저장하면 받을 돈이 장부의 매출로 바로 들어가요.') +
-    '<div class="group" style="margin-top:22px"><button class="row" data-act="pickNote"><span class="main"><span class="t" style="font-weight:500">고장 기록 연결</span></span><span class="val">' + esc(note ? (note.equip || '기록') : '없음') + '</span>' + I.chev + '</button></div>' +
+    '<div class="group" style="margin-top:22px"><button class="row" data-act="pickNote"><span class="main"><span class="t" style="font-weight:500">트러블슈팅 연결</span></span><span class="val">' + esc(note ? (note.equip || '기록') : '없음') + '</span>' + I.chev + '</button></div>' +
     (d.id ? '<div class="group" style="margin-top:22px"><button class="btn red" data-act="delSched">일정 삭제</button></div>' : '');
 };
 
@@ -509,7 +512,7 @@ VIEWS.settings = () => {
     sec('사업자') + '<div class="group">' + item('taxType', '#15803D', sv('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'), '과세 유형', s.taxType === 'simple' ? '간이과세자' : '일반과세자') + (s.taxType === 'simple' ? item('taxRate', '#4D7C0F', sv('<path d="M5 19L19 5M7 7h.01M17 17h.01"/>'), '업종', rateName + ' ' + Math.round(s.rate * 100) + '%') : '') + '</div>' +
     foot(s.taxType === 'simple' ? '간이과세자는 1년에 한 번(다음 해 1월 25일까지) 신고해요. 업종별 부가가치율로 계산해요.' : '일반과세자는 1월과 7월, 1년에 두 번 신고해요.') +
     sec('백업') + '<div class="group">' + item('exportBackup', '#1D4ED8', sv('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 내보내기', '') + item('importBackup', '#2563EB', sv('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 불러오기', '') + '</div>' +
-    foot('기록·일정·장부·사진은 이 폰에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 카톡이나 드라이브로 보내두세요. 매뉴얼 파일은 백업에 들어가지 않아요.') +
+    foot('기록·일정·장부·사진은 이 폰에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 카톡이나 드라이브로 보내두세요.') +
     sec('정보') + '<div class="group"><a class="row" href="' + PRIVACY_URL + '" target="_blank" rel="noopener"><span class="ico30" style="background:#636366">' + sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">개인정보처리방침</span></span>' + I.chev + '</a><div class="row"><span class="ico30" style="background:#1D4ED8">' + sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">버전</span></span><span class="val">' + VERSION + '</span></div></div>';
 };
 
@@ -517,7 +520,7 @@ VIEWS.tledger = p => ledgerView(p, true);
 function dayExtra(sel) {
   const notes = D.notes.filter(n => n.createdAt && ymd(new Date(n.createdAt)) === sel).sort((a, b) => b.createdAt - a.createdAt);
   const txs = D.txs.filter(t => t.date === sel);
-  return (notes.length ? sec('이날 고장 기록 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, true)).join('') + '</div>' : '') +
+  return (notes.length ? sec('이날 트러블슈팅 ' + notes.length) + '<div class="group">' + notes.map(n => noteRow(n, true)).join('') + '</div>' : '') +
     (txs.length ? sec('이날 거래 ' + txs.length) + '<div class="group">' + txs.map(txRow).join('') + '</div>' : '');
 }
 
@@ -574,7 +577,7 @@ VIEWS.teamManage = () => {
     '<p style="margin:10px 0 0;font-size:13px;color:var(--muted)">팀 요금 예시 · ' + t.members.length + '명 × 9,900원 = 월 ' + won(t.members.length * 9900) + '원</p></div>' +
     sec('팀원 ' + t.members.length) + '<div class="group">' + t.members.map(m => '<button class="row" data-act="memberMenu" data-id="' + esc(m.id) + '">' + av(m.id) + '<span class="main"><span class="t">' + esc(m.name) + '</span><span class="s">' + (m.role === 'owner' ? '사장 · 장부 전체 보기' : '기사') + '</span></span>' + (m.id === 'me' ? '<span class="val">나</span>' : I.chev) + '</button>').join('') + '<button class="row" data-act="addMember"><span class="main"><span class="t" style="color:var(--tint)">+ 팀원 추가 (체험)</span></span></button></div>' +
     foot('지금은 이 폰 안에서만 팀원을 만들어 체험할 수 있어요.') +
-    sec('권한') + '<div class="group">' + [['share', '기사끼리 고장 기록 공유'], ['manual', '매뉴얼 팀 공유'], ['techLedger', '기사도 팀 장부 보기']].map(([k, l]) => '<div class="frow"><span style="flex:1">' + l + '</span>' + sw(D.settings.perms[k], 'perm" data-v="' + k, l) + '</div>').join('') + '</div>' +
+    sec('권한') + '<div class="group">' + [['share', '기사끼리 트러블슈팅 공유'], ['techLedger', '기사도 팀 장부 보기']].map(([k, l]) => '<div class="frow"><span style="flex:1">' + l + '</span>' + sw(D.settings.perms[k], 'perm" data-v="' + k, l) + '</div>').join('') + '</div>' +
     '<div class="group" style="margin-top:22px"><button class="btn" style="color:var(--tint)" data-act="toPersonal">개인 공간으로 돌아가기</button></div>' +
     '<div class="group" style="margin-top:12px"><button class="btn red" data-act="deleteTeam">팀 해제</button></div>';
 };
@@ -614,7 +617,7 @@ ACT.rmPhoto = el => { V.p.d.photos.splice(+el.dataset.i, 1); dirty = true; $('#p
 ACT.pickWho = async () => { const ms = members(); const i = await sheet(ms.map(m => m.name)); if (i >= 0) { V.p.d.who = ms[i].id; dirty = true; render(); } };
 
 /* schedules */
-function schedDraft(s) { return s ? JSON.parse(JSON.stringify(s)) : { title: '', client: '', date: V.name === 'home' && V.p.sel ? V.p.sel : todayStr(), start: '09:00', end: '10:00', status: '예정', amount: 0, autoSale: true, who: teamOn() ? null : 'me', noteId: null, saleTxId: null }; }
+function schedDraft(s) { return s ? JSON.parse(JSON.stringify(s)) : { title: '', client: '', addr: '', date: V.name === 'home' && V.p.sel ? V.p.sel : todayStr(), start: '09:00', end: '10:00', status: '예정', amount: 0, autoSale: true, who: teamOn() ? null : 'me', noteId: null, saleTxId: null }; }
 ACT.newSched = () => go('schedEdit', { d: schedDraft() });
 ACT.openSched = el => go('schedEdit', { d: schedDraft(D.schedules.find(s => s.id === el.dataset.id)) });
 ACT.selDay = el => {
@@ -624,7 +627,7 @@ ACT.selDay = el => {
 };
 ACT.addOnDay = async () => {
   const sel = V.p.sel || todayStr();
-  const i = await sheet(['일정 추가', '고장 기록 추가', '거래 추가 (매출·매입)'], (sel === todayStr() ? '오늘' : shortDay(sel)) + '에 추가');
+  const i = await sheet(['일정 추가', '트러블슈팅 추가', '거래 추가 (매출·매입)'], (sel === todayStr() ? '오늘' : shortDay(sel)) + '에 추가');
   const fake = { dataset: { v: sel } };
   if (i === 0) ACT.newSched(); else if (i === 1) ACT.newNote(fake); else if (i === 2) ACT.newTx(fake);
 };
@@ -635,10 +638,20 @@ ACT.calMove = el => { const [Y, M] = (V.p.ym || (V.p.sel || todayStr()).slice(0,
 ACT.schedStatus = el => { V.p.d.status = el.dataset.v; dirty = true; render(); };
 ACT.tglAutoSale = () => { V.p.d.autoSale = !V.p.d.autoSale; dirty = true; render(); };
 ACT.pickAssignee = async () => { const ms = members(); const i = await sheet(['배정 안 함', ...ms.map(m => m.name)], '담당 기사'); if (i >= 0) { V.p.d.who = i === 0 ? null : ms[i - 1].id; dirty = true; render(); } };
+ACT.navGo = async el => {
+  const a = el.dataset.v; if (!a) return; const q = encodeURIComponent(a);
+  const apps = [['카카오맵', 'kakaomap://search?q=' + q, 'https://map.kakao.com/link/search/' + q], ['네이버지도', 'nmap://search?query=' + q + '&appname=com.hwanggoo.gisanote', 'https://m.map.naver.com/search2/search.naver?query=' + q], ['티맵', 'tmap://search?name=' + q, null]];
+  const last = D.settings.navApp; const order = apps.slice().sort((x, y) => (y[0] === last) - (x[0] === last));
+  const i = await sheet(order.map(x => x[0]), '길찾기 · ' + a); if (i < 0) return; const [name, app, web] = order[i];
+  D.settings.navApp = name; saveKV('settings');
+  if (NATIVE) { try { const r = await AppLauncher.openUrl({ url: app }); if (r && r.completed) return; } catch (e) {} }
+  if (web) { if (NATIVE) { try { await AppLauncher.openUrl({ url: web }); return; } catch (e) {} } window.open(web, '_blank'); }
+  else toast(name + ' 앱이 설치돼 있지 않아요');
+};
 ACT.pickNote = async () => { const list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 8); const i = await sheet(['연결 안 함', ...list.map(n => (n.equip || '장비 미입력') + ' · ' + relTime(n.createdAt))], '고장 기록 연결'); if (i >= 0) { V.p.d.noteId = i === 0 ? null : list[i - 1].id; dirty = true; render(); } };
 ACT.saveSched = async () => {
   const d = V.p.d; if (!(d.title || '').trim()) { toast('작업 이름을 적어주세요'); return; }
-  const s = Object.assign({}, d, { id: d.id || newId(), title: d.title.trim(), client: (d.client || '').trim(), updatedAt: Date.now() }); if (!s.createdAt) s.createdAt = Date.now();
+  const s = Object.assign({}, d, { id: d.id || newId(), title: d.title.trim(), client: (d.client || '').trim(), addr: (d.addr || '').trim(), updatedAt: Date.now() }); if (!s.createdAt) s.createdAt = Date.now();
   let msg = '저장했어요';
   if (s.status === '완료' && s.autoSale && s.amount > 0) {
     const sp = splitAmt(s.amount, true); const existing = s.saleTxId ? D.txs.find(t => t.id === s.saleTxId) : null;
@@ -813,6 +826,7 @@ app.addEventListener('input', e => {
   const el = e.target; const k = el.dataset && el.dataset.in; if (!k || !V.p.d) return;
   if (el.dataset.num) { const n = digits(el.value); V.p.d[k] = n; const pos = el.value.length; el.value = n ? won(n) : ''; try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) { } if (V.name === 'txEdit') { const sp = $('#split'); if (sp) sp.textContent = splitText(splitAmt(n, V.p.d.vatIncl)); } }
   else V.p.d[k] = el.value;
+  if (k === 'addr') { const g = $('#navg'); if (g) { const v = el.value.trim(); g.style.display = v ? 'block' : 'none'; g.querySelector('button').dataset.v = v; } }
   dirty = true;
 });
 /* swipe left/right between tabs */
