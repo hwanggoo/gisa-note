@@ -275,3 +275,32 @@ body{font-weight:450}
 .navbtn{font-weight:550}
 .sheet .grp button{font-weight:550}
 .time{width:66px}.time span{white-space:nowrap}
+/* 트러블슈팅 폴더 (1.7) */
+.fold{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:64px;width:100%;text-align:left;color:var(--ink)}
+.fold + .fold{border-top:1px solid var(--line)}
+.fic{flex:none;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+.fic svg{width:24px;height:24px}
+.fold .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.fold .t{font-size:17px;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fold .s{font-size:14px;color:var(--muted)}
+.cnt{flex:none;font-size:16px;font-weight:750;color:var(--ink2);font-variant-numeric:tabular-nums}
+.opn{color:var(--orange);font-weight:700}
+.fhead{display:flex;align-items:center;gap:12px;margin-top:4px}
+.fhead h1{font-size:26px !important}.fhead .sub{margin:0 !important}
+.sgrp{display:flex;align-items:center;gap:8px;padding:13px 14px;width:100%;text-align:left;background:#FAFAFC;font-weight:700;font-size:16px;color:var(--ink);letter-spacing:-.2px}
+.sgrp + .sgrp,.li + .sgrp{border-top:1px solid var(--line)}
+.sgrp svg{flex:none;width:10px;height:12px;color:var(--muted)}
+.sgrp .gt{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sgrp .n{margin-left:auto;flex:none;font-size:14px;color:var(--muted);font-weight:600}
+.li{display:flex;align-items:center;gap:10px;padding:10px 14px 10px 32px;width:100%;text-align:left;border-top:1px solid var(--line);font-size:15px;color:var(--ink)}
+.li .d{flex:none;width:8px;height:8px;border-radius:4px}
+.li .x{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .x b{font-weight:700}
+.li .w{flex:none;font-size:13px;color:var(--muted)}
+.li{align-items:flex-start}
+.li .d{margin-top:7px}
+.li .x{display:flex;flex-direction:column;gap:1px;white-space:normal}
+.li .x .l1,.li .x .l2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .x .l1 i{font-style:normal;color:var(--muted);font-size:13px;margin-left:6px}
+.li .x .l2{font-size:14px;color:var(--ink2)}
+.li .w{margin-top:2px}

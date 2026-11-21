@@ -8,7 +8,7 @@ import { AppLauncher } from '@capacitor/app-launcher';
 import { buildDemo } from './demo.js';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -247,6 +247,7 @@ function ctaFor() {
   switch (V.name) {
     case 'home': { const sel = V.p.sel || todayStr(); return [(sel === todayStr() ? '오늘' : shortDay(sel)) + ' 일정·기록·거래 추가', 'addOnDay']; }
     case 'records': return ['트러블슈팅 추가', 'newNote'];
+    case 'recFolder': return [(V.p.key.length > 10 ? '이 폴더' : V.p.key) + '에 추가', 'newNoteIn'];
     case 'man': return ['매뉴얼 올리기', 'addManual'];
     case 'ledger': case 'tledger': return ['거래 추가', 'newTx'];
     case 'talk': return V.p.tab === 'req' ? ['구매 요청', 'newReq'] : null;
@@ -315,17 +316,50 @@ function durText(s) { if (!s.start || !s.end) return ''; const [a, b] = s.start.
 const VIEWS = {}, AFTER = {};
 
 /* --- 기록 목록 --- */
+/* --- 트러블슈팅 폴더 --- */
+const CATRULES = [
+  ['영상 (X-ray · DR)', /x-?ray|엑스레이|디텍터|\bdr\b|\bct\b|mri|촬영/i, 'scan'], ['초음파', /초음파|프로브/, 'wave'],
+  ['환자감시 · 호흡', /환자감시|중앙감시|spo2|인공호흡|마취기|호흡기/i, 'heart'], ['멸균 · 소독', /멸균|소독|세척기/, 'steam'],
+  ['치과 장비', /치과|유니트체어|석션/, 'tooth'], ['수술실 장비', /수술/, 'lamp'], ['검사 장비', /분석기|검사기/, 'flask'], ['물리치료', /충격파|물리치료|간섭전류/, 'bolt'],
+  ['시스템에어컨', /에어컨|실외기|실내기/, 'snow'], ['냉각탑', /냉각탑/, 'tower'], ['냉동 · 냉장', /냉동|냉장|쇼케이스|압축기/, 'cold'], ['보일러 · 난방', /보일러|난방|분배기/, 'fire'],
+  ['급수 배관', /배관|ppc|sts/i, 'pipe'], ['펌프', /펌프/, 'pump'], ['환기 · 전열교환기', /환기|전열교환/, 'wind'], ['인버터 · 전기', /인버터|차단기|전기|모터/, 'bolt']];
+const FIC = { scan: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M3 12h5M12 9h5M12 13h5M12 17h3"/>', wave: '<path d="M3 12h3l2-6 4 12 3-9 2 3h4"/>', heart: '<path d="M3 12h4l2-4 3 8 2-4h7"/>', steam: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M8 4c0 1.5 1 1.5 1 3M12 4c0 1.5 1 1.5 1 3M16 4c0 1.5 1 1.5 1 3M8 14h8"/>', tooth: '<path d="M7 4c-2 0-3 2-3 4 0 3 1.5 5 2 8 .3 2 1 4 2 4s1.5-3 2-5c.3-1 1.7-1 2 0 .5 2 1 5 2 5s1.7-2 2-4c.5-3 2-5 2-8 0-2-1-4-3-4-2 0-3 1-5 1S9 4 7 4z"/>', lamp: '<path d="M4 10h16l-3 5H7zM12 3v7M9 19h6"/>', flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M7 15h10"/>', bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>', snow: '<path d="M12 2v20M4.9 6l14.2 12M19.1 6L4.9 18"/>', tower: '<path d="M7 21l2-15h6l2 15M5 21h14M10 11h4"/>', cold: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M5 10h14M8 6.5v1M8 13v3"/>', fire: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 .3 2 1.5 3 2.5 3 0-3-1-5 0-8z"/>', pipe: '<path d="M3 8h8a4 4 0 0 1 4 4v9M3 13h6a1 1 0 0 1 1 1v7"/>', pump: '<circle cx="12" cy="12" r="7"/><path d="M12 5v7l5 3"/>', wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8"/>', site: '<path d="M4 21V7l8-4 8 4v14M9 21v-5h6v5M8 10h2M14 10h2"/>', folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' };
+const FCOL = ['#1D4ED8', '#0E7490', '#C2410C', '#15803D', '#7C3AED', '#BE185D', '#A16207', '#475569', '#0F766E', '#4D7C0F'];
+const catOf = n => n.cat || (CATRULES.find(r => r[1].test((n.equip || '') + ' ' + (n.symptom || ''))) || ['기타'])[0];
+const catIcon = c => FIC[(CATRULES.find(r => r[0] === c) || [0, 0, 'folder'])[2]];
+const colOf = k => { let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return FCOL[h % FCOL.length]; };
+const fic = (k, icon, size) => '<span class="fic" style="background:' + colOf(k) + (size ? ';width:' + size + 'px;height:' + size + 'px' : '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span>';
+const issueOf = n => { const t = (n.symptom || n.memo || '').trim(); const m = t.match(/\b([A-Z]{1,4}-?\d{2,4})\b/) || t.match(/에러\s*(\d{2,4})/); if (m) { const first = t.split(/[,·]/)[0].trim(); return first.length <= 22 ? first : m[0]; } const f = t.split(/[,·.]/)[0].trim(); return f ? (f.length > 22 ? f.slice(0, 21) + '…' : f) : '증상 미입력'; };
+const modelOf = e => { const w = (e || '').split(/\s+/).filter(x => /\d/.test(x)); return w.length ? w.join(' ') : (e || '장비 미입력'); };
+function folderList(kind) {
+  const by = new Map(); for (const n of D.notes) { const k = kind === 'site' ? ((n.site || '').trim() || '현장 미입력') : catOf(n); if (!by.has(k)) by.set(k, []); by.get(k).push(n); }
+  if (!by.size) return homeList([], '', false);
+  const rows = [...by.entries()].map(([k, a]) => ({ k, a, open: a.filter(n => !n.resolved).length, last: Math.max(...a.map(n => n.createdAt || 0)) })).sort((x, y) => y.a.length - x.a.length || y.last - x.last);
+  return '<div class="group" style="margin-top:14px">' + rows.map(r => '<button class="fold" data-act="openFolder" data-v="' + esc(r.k) + '" data-kind="' + kind + '">' + fic(r.k, kind === 'site' ? FIC.site : catIcon(r.k)) + '<span class="main"><span class="t">' + esc(r.k) + '</span><span class="s">최근 ' + esc(relTime(r.last)) + (r.open ? ' · <span class="opn">미해결 ' + r.open + '</span>' : '') + '</span></span><span class="cnt">' + r.a.length + '</span>' + I.chev + '</button>').join('') + '</div>';
+}
+ROOTS.recFolder = 'rec';
+VIEWS.recFolder = p => {
+  const list = D.notes.filter(n => (p.kind === 'site' ? ((n.site || '').trim() || '현장 미입력') : catOf(n)) === p.key).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const g = new Map(); for (const n of list) { const k = issueOf(n); if (!g.has(k)) g.set(k, []); g.get(k).push(n); }
+  const groups = [...g.entries()].sort((a, b) => b[1].length - a[1].length || (b[1][0].createdAt || 0) - (a[1][0].createdAt || 0));
+  if (!p.open) { p.open = {}; groups.forEach(([k, a], i) => { if (i === 0 || a.some(n => !n.resolved)) p.open[k] = true; }); }
+  const op = list.filter(n => !n.resolved).length;
+  const line = n => '<button class="li" data-act="openNote" data-id="' + esc(n.id) + '"><span class="d" style="background:' + (n.resolved ? 'var(--green-dot)' : 'var(--orange)') + '"></span><span class="x"><span class="l1"><b>' + esc(n.equip || '장비 미입력') + '</b>' + (p.kind === 'site' ? '' : n.site ? '<i>' + esc(n.site) + '</i>' : '') + '</span><span class="l2">' + esc(n.cause ? n.cause + (n.action ? ' → ' + n.action : '') : (n.symptom || n.memo || '')) + '</span></span><span class="w">' + esc(relTime(n.createdAt)) + '</span></button>';
+  return navBack('트러블슈팅') + '<div class="title fhead">' + fic(p.key, p.kind === 'site' ? FIC.site : catIcon(p.key), 46) + '<div><h1>' + esc(p.key) + '</h1><p class="sub">' + list.length + '건' + (op ? ' · <span class="opn">미해결 ' + op + '</span>' : '') + '</p></div></div>' +
+    (list.length ? '<div class="group" style="margin-top:16px">' + groups.map(([k, a]) => { const o = !!p.open[k]; return '<button class="sgrp" data-act="fgToggle" data-v="' + esc(k) + '">' + (o ? I.down : I.next) + '<span class="gt">' + esc(k) + '</span>' + (a.some(n => !n.resolved) ? '<span class="dot" style="background:var(--orange)"></span>' : '') + '<span class="n">' + a.length + '건</span></button>' + (o ? a.map(line).join('') : ''); }).join('') + '</div>' + foot('줄을 누르면 증상 · 원인 · 조치 · 사진이 열려요. 같은 증상이나 에러코드끼리 묶여 있어요.') : '<div class="empty">기록이 없어요</div>');
+};
 VIEWS.records = p => {
   let list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const q = (p.q || '').trim().toLowerCase();
   if (p.onlyOpen) list = list.filter(n => !n.resolved);
   if (q) { const qt = q.split(/\s+/); list = list.filter(n => { const h = [n.equip, n.symptom, n.cause, n.action, n.site, n.memo].join(' ').toLowerCase(); return qt.every(t => h.includes(t)); }); }
-  const open = D.notes.filter(n => !n.resolved).length;
+  const open = D.notes.filter(n => !n.resolved).length; const rv = D.settings.recView || 'cat';
   return topBar() +
     '<div class="title"><h1>트러블슈팅</h1><p class="sub">전체 ' + D.notes.length + '건 · 미해결 ' + open + '건</p></div>' +
-    '<div class="search"><label>' + I.search + '<span class="sr">트러블슈팅 검색</span><input id="q" type="search" placeholder="장비, 모델명, 증상 검색" value="' + esc(p.q || '') + '" autocomplete="off"></label></div>' +
-    '<div class="chips" style="margin-top:10px"><button class="chip' + (!p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="0">전체</button><button class="chip' + (p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="1">미해결만</button></div>' +
-    '<div id="list">' + homeList(list, q, teamOn()) + '</div>';
+    '<div class="search"><label>' + I.search + '<span class="sr">트러블슈팅 검색</span><input id="q" type="search" placeholder="장비, 모델명, 에러코드 검색" value="' + esc(p.q || '') + '" autocomplete="off"></label></div>' +
+    '<div style="margin-top:12px">' + seg([['cat', '장비별'], ['site', '현장별'], ['new', '최신순']], rv, 'recView') + '</div>' +
+    (rv === 'new' ? '<div class="chips" style="margin-top:10px"><button class="chip' + (!p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="0">전체</button><button class="chip' + (p.onlyOpen ? ' on' : '') + '" data-act="recFilter" data-v="1">미해결만</button></div>' : '') +
+    '<div id="list">' + (q || rv === 'new' ? homeList(list, q, teamOn()) : folderList(rv)) + '</div>';
 };
 function tile(act, color, icon, num, label) {
   return '<button class="tile" data-act="' + act + '"><span class="top"><span class="ic" style="background:' + color + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span><span class="num' + (String(num).replace(/<[^>]+>/g, '').length > 4 ? ' sm' : '') + '">' + num + '</span></span><span class="lb">' + label + '</span></button>';
@@ -339,7 +373,7 @@ function homeList(list, q, withAv) {
 }
 AFTER.records = p => {
   const q = $('#q'); if (!q) return;
-  q.addEventListener('input', () => { V.p.q = q.value; const n = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).filter(x => !V.p.onlyOpen || !x.resolved); const qq = q.value.trim().toLowerCase(); const list = qq ? n.filter(x => { const h = [x.equip, x.symptom, x.cause, x.action, x.site, x.memo].join(' ').toLowerCase(); return qq.split(/\s+/).every(t => h.includes(t)); }) : n; $('#list').innerHTML = homeList(list, qq, teamOn()); });
+  q.addEventListener('input', () => { V.p.q = q.value; const n = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).filter(x => !V.p.onlyOpen || !x.resolved); const qq = q.value.trim().toLowerCase(); const list = qq ? n.filter(x => { const h = [x.equip, x.symptom, x.cause, x.action, x.site, x.memo].join(' ').toLowerCase(); return qq.split(/\s+/).every(t => h.includes(t)); }) : n; const rv = D.settings.recView || 'cat'; $('#list').innerHTML = (qq || rv === 'new') ? homeList(list, qq, teamOn()) : folderList(rv); });
 };
 const modeSw = () => { const t = teamOn(); return '<div class="modesw" role="tablist" aria-label="개인·팀 바꾸기"><button data-act="setMode" data-v="personal" class="' + (t ? '' : 'on') + '" aria-selected="' + !t + '">' + I.person + '개인</button><button data-act="setMode" data-v="team" class="' + (t ? 'on' : '') + '" aria-selected="' + t + '">' + I.people + esc(D.team ? D.team.name : '팀') + '</button></div>'; };
 const topBar = () => '<div class="chipbar">' + modeSw() + '<button class="navbtn" data-act="go" data-v="settings" aria-label="설정">' + I.gear + '</button></div>';
@@ -365,7 +399,7 @@ VIEWS.noteEdit = p => {
   const fr = (k, l, ph) => '<label class="frow"><span class="k">' + l + '</span><input data-in="' + k + '" value="' + esc(d[k]) + '" placeholder="' + esc(ph) + '" autocomplete="off"></label>';
   const ta = (k, l, ph) => '<label class="frow top"><span class="k">' + l + '</span><textarea data-in="' + k + '" rows="2" placeholder="' + esc(ph) + '">' + esc(d[k]) + '</textarea></label>';
   return sheetNav(d.id ? '트러블슈팅 편집' : '새 트러블슈팅', '저장', 'saveNote') +
-    '<div class="group mt">' + fr('equip', '장비', '예) 시스템 에어컨 실외기') + fr('site', '현장', '건물, 층, 고객 이름') + '</div>' +
+    '<div class="group mt"><button class="row" data-act="pickCat" style="min-height:52px"><span class="k" style="width:64px;font-weight:650;font-size:16px">종류</span><span class="main"><span class="t" style="font-weight:500">' + esc(d.cat || catOf(Object.assign({}, d, { cat: '' }))) + '</span></span><span class="val">' + (d.cat ? '바꾸기' : '자동') + '</span>' + I.chev + '</button>' + fr('equip', '장비', '예) DR 디텍터, 시스템에어컨 실외기') + fr('site', '현장', '병원·건물 이름, 층') + '</div>' +
     sec('고장 내용') + '<div class="group">' + ta('symptom', '증상', '어떤 문제가 있었나요?') + ta('cause', '원인', '원인이 뭐였나요?') + ta('action', '조치', '어떻게 해결했나요?') + '</div>' +
     sec('상태') + seg([['0', '<span class="dot" style="background:var(--orange)"></span>미해결', 'o'], ['1', '해결', 'g']], d.resolved ? '1' : '0', 'draftResolved') +
     (teamOn() ? sec('작성자') + '<div class="group"><button class="row" data-act="pickWho"><span class="main"><span class="t">' + esc(mem(d.who || 'me').name) + '</span></span><span class="val">바꾸기</span>' + I.chev + '</button></div>' : '') +
@@ -608,7 +642,7 @@ ACT.saveNote = async () => {
   const d = V.p.d; const has = ['equip', 'symptom', 'cause', 'action', 'memo'].some(k => (d[k] || '').trim()) || d.photos.length;
   if (!has) { toast('내용을 하나는 적어주세요'); return; }
   const now = Date.now(); const n = { id: d.id || newId(), createdAt: d.createdAt || now, updatedAt: now, who: d.who || 'me' };
-  ['equip', 'site', 'symptom', 'cause', 'action', 'memo'].forEach(k => n[k] = (d[k] || '').trim()); n.resolved = !!d.resolved; n.photos = [...d.photos];
+  ['equip', 'site', 'symptom', 'cause', 'action', 'memo', 'cat'].forEach(k => n[k] = (d[k] || '').trim()); if (!n.cat) delete n.cat; n.resolved = !!d.resolved; n.photos = [...d.photos];
   await putItem('notes', n);
   await delPhotos([...(d._orig || []), ...(d._new || [])].filter(p => !n.photos.includes(p)));
   const wasEdit = !!d.id; d._new = []; dirty = false; toast('저장했어요'); if (wasEdit) V.stack.pop(); go('note', { id: n.id }, { replace: true });
@@ -678,6 +712,16 @@ ACT.navGo = async el => {
   if (NATIVE) { try { const r = await AppLauncher.openUrl({ url: app }); if (r && r.completed) return; } catch (e) {} }
   if (web) { if (NATIVE) { try { await AppLauncher.openUrl({ url: web }); return; } catch (e) {} } window.open(web, '_blank'); }
   else toast(name + ' 앱이 설치돼 있지 않아요');
+};
+ACT.openFolder = el => go('recFolder', { kind: el.dataset.kind, key: el.dataset.v });
+ACT.fgToggle = el => { const k = el.dataset.v; V.p.open[k] = !V.p.open[k]; render(); };
+ACT.recView = el => { D.settings.recView = el.dataset.v; saveKV('settings'); render(); };
+ACT.newNoteIn = () => { ACT.newNote(); const d = V.p.d; if (V.stack.length) { const prev = V.stack[V.stack.length - 1].p; if (prev.kind === 'site') d.site = prev.key === '현장 미입력' ? '' : prev.key; else d.cat = prev.key === '기타' ? '' : prev.key; } render(); };
+ACT.pickCat = async () => {
+  const used = [...new Set(D.notes.map(catOf))]; const all = [...new Set([...used, ...CATRULES.map(r => r[0])])];
+  const i = await sheet(['자동 (장비 이름으로 분류)', ...all, '새 종류 직접 입력'], '장비 종류'); if (i < 0) return;
+  const d = V.p.d; if (i === 0) d.cat = ''; else if (i === all.length + 1) { const t = await promptText('새 장비 종류', '', { ph: '예) 내시경 장비' }); if (!t) return; d.cat = t.trim(); } else d.cat = all[i - 1];
+  dirty = true; render();
 };
 ACT.pickNote = async () => { const list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 8); const i = await sheet(['연결 안 함', ...list.map(n => (n.equip || '장비 미입력') + ' · ' + relTime(n.createdAt))], '고장 기록 연결'); if (i >= 0) { V.p.d.noteId = i === 0 ? null : list[i - 1].id; dirty = true; render(); } };
 ACT.saveSched = async () => {
