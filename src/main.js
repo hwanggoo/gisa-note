@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -35,6 +35,7 @@ const I = {
   down: '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>',
   search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
   wrench: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>',
+  pen: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
   check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   cam: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   lock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
@@ -244,6 +245,11 @@ function ctaFor() {
     case 'man': return ['매뉴얼 올리기', 'addManual'];
     case 'ledger': case 'tledger': return ['거래 추가', 'newTx'];
     case 'talk': return V.p.tab === 'req' ? ['구매 요청', 'newReq'] : null;
+    case 'noteEdit': return ['저장', 'saveNote', '', 'check'];
+    case 'schedEdit': return ['저장', 'saveSched', '', 'check'];
+    case 'txEdit': return ['저장', 'saveTx', '', 'check'];
+    case 'reqNew': return ['요청 보내기', 'sendReq', '', 'check'];
+    case 'note': return ['기록 편집', 'editNote', V.p.id, 'edit'];
   }
   return null;
 }
@@ -251,8 +257,8 @@ function renderTabbar() {
   const bar = $('#tabbar'); const cur = ROOTS[V.name];
   const cta = ctaFor(); let c = $('#cta');
   if (!c) { c = document.createElement('button'); c.id = 'cta'; c.className = 'cta'; document.body.appendChild(c); }
-  if (cta && cur) { c.style.display = 'flex'; c.dataset.act = cta[1]; c.dataset.v = cta[2] || ''; c.innerHTML = I.plus + '<span>' + esc(cta[0]) + '</span>'; } else c.style.display = 'none';
-  if (!cur) { bar.style.display = 'none'; document.body.style.paddingBottom = '40px'; return; }
+  if (cta) { c.style.display = 'flex'; c.classList.toggle('solo', !cur); c.dataset.act = cta[1]; c.dataset.v = cta[2] || ''; c.dataset.id = cta[2] || ''; c.innerHTML = (cta[3] === 'check' ? I.check : cta[3] === 'edit' ? I.pen : I.plus) + '<span>' + esc(cta[0]) + '</span>'; } else c.style.display = 'none';
+  if (!cur) { bar.style.display = 'none'; document.body.style.paddingBottom = cta ? '110px' : '40px'; return; }
   bar.style.display = 'grid'; document.body.style.paddingBottom = (V.name === 'talk' && V.p.tab !== 'req') ? '150px' : '170px';
   const tabs = tabList();
   bar.style.gridTemplateColumns = 'repeat(' + tabs.length + ',minmax(0,1fr))';
@@ -261,7 +267,7 @@ function renderTabbar() {
 
 /* ============ shared view pieces ============ */
 const navBack = (label, right) => '<div class="nav"><div class="l"><button class="navbtn" data-act="back">' + I.back + '<span>' + esc(label || '뒤로') + '</span></button></div><div class="r">' + (right || '') + '</div></div>';
-const sheetNav = (title, saveLabel, saveAct) => '<div class="sheetnav"><button class="navbtn" data-act="back">취소</button><span class="navtitle">' + esc(title) + '</span><button class="navbtn b" data-act="' + saveAct + '">' + esc(saveLabel) + '</button></div>';
+const sheetNav = (title, saveLabel, saveAct) => '<div class="sheetnav"><button class="navbtn" data-act="back">취소</button><span class="navtitle">' + esc(title) + '</span><span></span></div>';
 const sec = (t, cls) => '<p class="sec' + (cls ? ' ' + cls : '') + '">' + t + '</p>';
 const foot = t => '<p class="foot">' + t + '</p>';
 const spaceChip = () => '<button class="space" data-act="space"><i>' + esc((D.team && D.team.name || '팀').slice(0, 1)) + '</i>' + esc(D.team ? D.team.name : '') + ' ' + I.down + '</button>';
@@ -337,7 +343,7 @@ VIEWS.note = p => {
   const n = D.notes.find(x => x.id === p.id); if (!n) return '<div class="empty">기록이 없어요</div>';
   const kv = (k, v) => '<div class="kv"><p class="k">' + k + '</p><p class="v' + (v ? '' : ' none') + '">' + (v ? esc(v) : '없음') + '</p></div>';
   const sims = similar(n);
-  return navBack('목록', '<button class="navbtn" data-act="editNote" data-id="' + esc(n.id) + '">편집</button>') +
+  return navBack('목록') +
     '<div class="title"><h1 style="font-size:27px">' + esc(n.equip || '장비 미입력') + '</h1><p class="sub">' + esc(new Date(n.createdAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })) + (n.site ? ' · ' + esc(n.site) : '') + (teamOn() ? ' · ' + esc(mem(n.who || 'me').name) : '') + '</p></div>' +
     '<div style="margin-top:14px">' + seg([['0', '<span class="dot" style="background:var(--orange)"></span>미해결', 'o'], ['1', '해결', 'g']], n.resolved ? '1' : '0', 'noteStatus') + '</div>' +
     '<div class="group mt">' + kv('증상', n.symptom) + kv('원인', n.cause) + kv('조치', n.action) + '</div>' +

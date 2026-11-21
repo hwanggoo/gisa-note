@@ -214,3 +214,4 @@ input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;backgr
 #app.slide-l{animation:inL .18s ease-out}
 #app.slide-r{animation:inR .18s ease-out}
 html,body{overscroll-behavior-x:none}
+.cta.solo{bottom:calc(16px + env(safe-area-inset-bottom))}
