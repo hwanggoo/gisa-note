@@ -220,3 +220,4 @@ html,body{overscroll-behavior-x:none}
 .modesw button svg{width:16px;height:16px;flex:none}
 .modesw button.on{background:#fff;color:var(--tint);font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .chipbar + .title,.chipbar + .titlerow{margin-top:8px}
+.tile .num.sm{font-size:17px;letter-spacing:-.6px}.tile .num.sm small{font-size:12px}

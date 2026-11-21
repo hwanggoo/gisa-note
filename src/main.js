@@ -5,9 +5,10 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
 import { AppLauncher } from '@capacitor/app-launcher';
+import { buildDemo } from './demo.js';
 
 const NATIVE = Capacitor.isNativePlatform();
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const PRIVACY_URL = 'https://hwanggoo.github.io/gisa-note/privacy.html';
 
 /* ============ small helpers ============ */
@@ -229,8 +230,9 @@ function go(name, p = {}, opts = {}) {
 async function back() {
   if (dirty && !(await ask('저장하지 않고 나갈까요?', '나가기', true))) return;
   dirty = false;
+  if (V.name === 'schedEdit' && V.p.d && V.p.d._fresh) { for (const t of D.txs.filter(t => t.schedId === V.p.d.id)) await delItem('txs', t.id); }
   if (V.p && V.p.d && V.p.d._new && V.p.d._new.length) { delPhotos(V.p.d._new); V.p.d._new = []; }
-  if (V.stack.length) { const s = V.stack.pop(); V.name = s.name; V.p = s.p; render(); }
+  if (V.stack.length) { const s = V.stack.pop(); V.name = s.name; V.p = s.p; if (V.name === 'schedEdit' && V.p.d && V.p.d._dirty) dirty = true; render(); }
   else go('home', {}, { root: true });
 }
 function render() {
@@ -326,7 +328,7 @@ VIEWS.records = p => {
     '<div id="list">' + homeList(list, q, teamOn()) + '</div>';
 };
 function tile(act, color, icon, num, label) {
-  return '<button class="tile" data-act="' + act + '"><span class="top"><span class="ic" style="background:' + color + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span><span class="num">' + num + '</span></span><span class="lb">' + label + '</span></button>';
+  return '<button class="tile" data-act="' + act + '"><span class="top"><span class="ic" style="background:' + color + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icon + '</svg></span><span class="num' + (String(num).replace(/<[^>]+>/g, '').length > 4 ? ' sm' : '') + '">' + num + '</span></span><span class="lb">' + label + '</span></button>';
 }
 function homeList(list, q, withAv) {
   if (!D.notes.length) return '<div class="empty"><h2>첫 트러블슈팅을 남겨보세요</h2>아래 파란 버튼을 눌러<br>장비, 증상, 원인, 조치를 적으면<br>다음에 같은 고장을 바로 찾을 수 있어요.</div>';
@@ -425,6 +427,10 @@ VIEWS.schedEdit = p => {
     (teamOn() ? sec('담당 기사') + '<div class="group"><button class="row" data-act="pickAssignee"><span class="main"><span class="t">' + (d.who ? esc(mem(d.who).name) : '배정 안 됨') + '</span></span><span class="val">바꾸기</span>' + I.chev + '</button></div>' : '') +
     sec('금액') + '<div class="group"><label class="frow"><span class="k">받을 돈</span><input class="r" inputmode="numeric" data-in="amount" data-num="1" value="' + (d.amount ? won(d.amount) : '') + '" placeholder="0"><span class="unit">원</span></label><div class="frow"><span style="flex:1">완료하면 매출로 기록</span>' + sw(d.autoSale, 'tglAutoSale', '완료하면 매출로 기록') + '</div></div>' +
     foot(sale ? '장부에 매출 ' + won(sale.total) + '원으로 기록돼 있어요.' : '상태를 완료로 저장하면 받을 돈이 장부의 매출로 바로 들어가요.') +
+    (() => { const buys = d.id ? D.txs.filter(t => t.type === 'buy' && t.schedId === d.id).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)) : []; const sum = buys.reduce((a, t) => a + t.total, 0);
+      return sec('이 일정의 매입' + (buys.length ? ' ' + buys.length + '건' : '')) + '<div class="group">' + buys.map(t => '<button class="row" data-act="openTx" data-id="' + esc(t.id) + '"><span class="main"><span class="t" style="font-size:15px">' + esc(t.memo || '매입') + '</span><span class="s">' + esc([t.party, t.proof].filter(Boolean).join(' · ')) + '</span></span><span style="font-weight:700">−' + won(t.total) + '</span>' + I.chev + '</button>').join('') +
+        '<button class="row" data-act="schedBuy"><span class="main"><span class="t" style="color:var(--tint);font-weight:700">+ 매입 추가 (자재·경비)</span></span></button></div>' +
+        (buys.length ? foot('매입 합계 ' + won(sum) + '원' + (d.amount ? ' · 남는 돈 ' + won(d.amount - sum) + '원' : '') + ' · 장부의 매입에도 같이 들어가요.') : foot('이 현장에 쓴 자재값, 주유비를 적으면 장부 매입과 부가세 계산에 같이 들어가요.')); })() +
     '<div class="group" style="margin-top:22px"><button class="row" data-act="pickNote"><span class="main"><span class="t" style="font-weight:500">트러블슈팅 연결</span></span><span class="val">' + esc(note ? (note.equip || '기록') : '없음') + '</span>' + I.chev + '</button></div>' +
     (d.id ? '<div class="group" style="margin-top:22px"><button class="btn red" data-act="delSched">일정 삭제</button></div>' : '');
 };
@@ -513,6 +519,8 @@ VIEWS.settings = () => {
     foot(s.taxType === 'simple' ? '간이과세자는 1년에 한 번(다음 해 1월 25일까지) 신고해요. 업종별 부가가치율로 계산해요.' : '일반과세자는 1월과 7월, 1년에 두 번 신고해요.') +
     sec('백업') + '<div class="group">' + item('exportBackup', '#1D4ED8', sv('<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 내보내기', '') + item('importBackup', '#2563EB', sv('<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'), '백업 불러오기', '') + '</div>' +
     foot('기록·일정·장부·사진은 이 폰에만 저장돼요. 폰을 바꾸거나 앱을 지우기 전에 백업 파일을 카톡이나 드라이브로 보내두세요.') +
+    sec('예시 데이터') + '<div class="group">' + item('demoLoad', '#7C3AED', sv('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M9 15h6"/>'), '한 달 예시 넣기', '') + (hasDemo() ? item('demoClear', '#D70015', sv('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'), '예시 지우기', '') : '') + '</div>' +
+    foot('다른 사람에게 보여줄 때 쓰세요. 이번 달 일정, 트러블슈팅 50건, 매출·매입이 들어가요. 직접 적은 기록은 건드리지 않아요.') +
     sec('정보') + '<div class="group"><a class="row" href="' + PRIVACY_URL + '" target="_blank" rel="noopener"><span class="ico30" style="background:#636366">' + sv('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">개인정보처리방침</span></span>' + I.chev + '</a><div class="row"><span class="ico30" style="background:#1D4ED8">' + sv('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>') + '</span><span class="main"><span class="t" style="font-weight:500;font-size:17px">버전</span></span><span class="val">' + VERSION + '</span></div></div>';
 };
 
@@ -638,6 +646,29 @@ ACT.calMove = el => { const [Y, M] = (V.p.ym || (V.p.sel || todayStr()).slice(0,
 ACT.schedStatus = el => { V.p.d.status = el.dataset.v; dirty = true; render(); };
 ACT.tglAutoSale = () => { V.p.d.autoSale = !V.p.d.autoSale; dirty = true; render(); };
 ACT.pickAssignee = async () => { const ms = members(); const i = await sheet(['배정 안 함', ...ms.map(m => m.name)], '담당 기사'); if (i >= 0) { V.p.d.who = i === 0 ? null : ms[i - 1].id; dirty = true; render(); } };
+const hasDemo = () => D.schedules.some(x => x.demo) || D.notes.some(x => x.demo) || D.txs.some(x => x.demo) || !!(D.team && D.team.demo);
+async function clearDemo() {
+  for (const st of ['schedules', 'notes', 'txs']) for (const x of D[st].filter(x => x.demo)) await db.del(st, x.id);
+  for (const st of ['schedules', 'notes', 'txs']) D[st] = D[st].filter(x => !x.demo);
+  D.messages = D.messages.filter(x => !x.demo); D.requests = D.requests.filter(x => !x.demo);
+  if (D.team && D.team.demo) { D.team = null; D.settings.mode = 'personal'; await saveKV('team'); await saveKV('settings'); }
+  await saveKV('messages'); await saveKV('requests');
+}
+ACT.demoLoad = async () => {
+  if (!(await ask('이번 달 일정, 트러블슈팅 50건, 매출·매입 예시를 넣을까요? 내가 적은 기록은 그대로 있어요.', '넣기'))) return;
+  await clearDemo(); const x = buildDemo(D.team);
+  for (const st of ['notes', 'schedules', 'txs']) for (const o of x[st]) await putItem(st, o);
+  if (x.team) { D.team = x.team; await saveKV('team'); }
+  D.messages.push(...x.messages); D.requests.push(...x.requests); await saveKV('messages'); await saveKV('requests');
+  toast('예시를 넣었어요. 일정 ' + x.schedules.length + '건 · 트러블슈팅 ' + x.notes.length + '건'); go('home', {}, { root: true });
+};
+ACT.demoClear = async () => { if (!(await ask('예시 데이터를 모두 지울까요? 내가 적은 기록은 그대로 있어요.', '지우기', true))) return; await clearDemo(); toast('예시를 지웠어요'); render(); };
+ACT.schedBuy = el => {
+  const d = V.p.d; if (!d.id) { d.id = newId(); d._fresh = true; }
+  d._dirty = dirty || !!d._fresh;
+  const t = txDraft(null, 'buy'); t.date = d.date || todayStr(); t.schedId = d.id; t.who = d.who || 'me'; t.memo = (d.title || '').trim() ? d.title.trim() + ' 자재' : '';
+  go('txEdit', { d: t });
+};
 ACT.navGo = async el => {
   const a = el.dataset.v; if (!a) return; const q = encodeURIComponent(a);
   const apps = [['카카오맵', 'kakaomap://search?q=' + q, 'https://map.kakao.com/link/search/' + q], ['네이버지도', 'nmap://search?query=' + q + '&appname=com.hwanggoo.gisanote', 'https://m.map.naver.com/search2/search.naver?query=' + q], ['티맵', 'tmap://search?name=' + q, null]];
@@ -651,14 +682,14 @@ ACT.navGo = async el => {
 ACT.pickNote = async () => { const list = D.notes.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 8); const i = await sheet(['연결 안 함', ...list.map(n => (n.equip || '장비 미입력') + ' · ' + relTime(n.createdAt))], '고장 기록 연결'); if (i >= 0) { V.p.d.noteId = i === 0 ? null : list[i - 1].id; dirty = true; render(); } };
 ACT.saveSched = async () => {
   const d = V.p.d; if (!(d.title || '').trim()) { toast('작업 이름을 적어주세요'); return; }
-  const s = Object.assign({}, d, { id: d.id || newId(), title: d.title.trim(), client: (d.client || '').trim(), addr: (d.addr || '').trim(), updatedAt: Date.now() }); if (!s.createdAt) s.createdAt = Date.now();
+  const s = Object.assign({}, d, { id: d.id || newId(), title: d.title.trim(), client: (d.client || '').trim(), addr: (d.addr || '').trim(), updatedAt: Date.now() }); if (!s.createdAt) s.createdAt = Date.now(); delete s._dirty; delete s._fresh;
   let msg = '저장했어요';
   if (s.status === '완료' && s.autoSale && s.amount > 0) {
     const sp = splitAmt(s.amount, true); const existing = s.saleTxId ? D.txs.find(t => t.id === s.saleTxId) : null;
     const t = Object.assign(existing || { id: newId(), createdAt: Date.now(), type: 'sale', proof: '', photos: [] }, { total: sp.total, supply: sp.supply, vat: sp.vat, vatIncl: true, date: s.date, party: s.client, memo: s.title, schedId: s.id, who: s.who || 'me' });
     await putItem('txs', t); s.saleTxId = t.id; msg = existing ? '저장했어요. 장부 금액도 맞췄어요' : '완료! 장부에 매출 ' + won(t.total) + '원 기록했어요';
   }
-  await putItem('schedules', s); dirty = false; toast(msg); back();
+  await putItem('schedules', s); d._fresh = false; d._dirty = false; dirty = false; toast(msg); back();
 };
 ACT.delSched = async () => {
   const d = V.p.d; const sale = d.saleTxId && D.txs.find(t => t.id === d.saleTxId);
